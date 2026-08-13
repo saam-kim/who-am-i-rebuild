@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Roboto Mono", monospace;
+
+  --color-surface-0: #f6f7fb;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #edeffa;
+  --color-line: #dde1f0;
+  --color-line-strong: #c6cce8;
+
+  --color-ink: #1f2333;
+  --color-ink-dim: #6b7086;
+  --color-ink-faint: #9297ac;
+
+  --color-brand: #4f46e5;
+  --color-brand-ink: #3730a3;
+  --color-brand-dim: #eeecfd;
+
+  --color-good: #059669;
+  --color-good-bg: #e9f9f2;
+  --color-warn: #d97706;
+  --color-warn-bg: #fef6e7;
+  --color-crit: #dc2626;
+  --color-crit-bg: #fdeceb;
+
+  --color-impact-bg: #0c0f1e;
+  --color-impact-surface: #171b30;
+  --color-impact-line: #33385c;
+  --color-impact-ink: #f4f5ff;
+  --color-impact-ink-dim: #a6abd1;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface-0);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.font-mono-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+@keyframes wai-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(900deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
