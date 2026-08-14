@@ -28,10 +28,10 @@ export function JoinScreen() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-0 p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-line bg-surface-1 p-6 shadow-[0_24px_60px_-32px_rgba(31,35,51,0.25)]">
-        <p className="font-mono-label text-[11px] uppercase text-brand">Who Am I</p>
-        <h1 className="mt-1 text-xl font-extrabold text-ink">참여 코드를 입력하세요</h1>
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="glass-card w-full max-w-sm rounded-[14px] p-6">
+        <span className="font-mono-label inline-block rounded-full bg-brand-dim px-3.5 py-1.5 text-[11px] text-brand-ink">Who Am I</span>
+        <h1 className="mt-4 text-xl font-extrabold tracking-tight text-ink">참여 코드를 입력하세요</h1>
 
         <label className="mt-5 block">
           <span className="font-mono-label text-[10px] uppercase text-ink-faint">참여 코드 (PIN)</span>
@@ -40,7 +40,7 @@ export function JoinScreen() {
             onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
             inputMode="numeric"
             placeholder="0000"
-            className="mt-1 w-full rounded-xl border border-line bg-surface-0 px-3 py-3 text-center text-2xl font-bold tracking-[0.3em] text-ink outline-none focus:border-brand"
+            className="font-display mt-1 w-full rounded-[10px] border-2 border-line bg-surface-0 px-3 py-3 text-center text-2xl font-bold tracking-[0.3em] text-brand-ink outline-none focus:border-brand"
           />
         </label>
 
@@ -50,7 +50,7 @@ export function JoinScreen() {
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             placeholder="예: 하늘 & 별빛"
-            className="mt-1 w-full rounded-xl border border-line bg-surface-0 px-3 py-3 text-[14px] text-ink outline-none focus:border-brand"
+            className="mt-1 w-full rounded-[10px] border border-line bg-surface-0 px-3 py-3 text-[14px] text-ink outline-none focus:border-brand"
           />
         </label>
 

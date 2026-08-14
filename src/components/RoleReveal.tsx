@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { roleById, REFLECTION_PROMPT } from "../data/roles";
-import { computeGap, computeOrientation, computeStability, GAP_LABEL, STABILITY_LABEL } from "../data/logic";
+import { computeGap, computeOrientation, computeStability, GAP_DESC, GAP_LABEL, STABILITY_DESC, STABILITY_LABEL } from "../data/logic";
 import type { PolicyChoice } from "../types";
 import { Card } from "./ui";
 
@@ -23,47 +23,49 @@ export function RoleReveal({ roleId, design1 }: { roleId?: string; design1?: Pol
   const gap = orientation ? computeGap(orientation) : undefined;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="flex flex-col items-center justify-center gap-3">
+    <div className="grid gap-8 sm:grid-cols-2 sm:items-center">
+      <div className="flex flex-col items-center justify-center gap-4">
         <div
-          className={`h-36 w-36 rounded-full border-4 border-impact-surface shadow-[0_10px_30px_rgba(0,0,0,0.4)] ${justSpun ? "animate-[wai-spin_1.8s_cubic-bezier(0.2,0.8,0.2,1)]" : ""}`}
+          className={`h-48 w-48 rounded-full border-4 border-white/10 shadow-[0_0_0_1px_rgba(96,165,250,0.3),0_10px_40px_rgba(37,99,235,0.35)] ${justSpun ? "animate-[wai-spin_1.8s_cubic-bezier(0.2,0.8,0.2,1)]" : "pulse-glow-dark"}`}
           style={{
             background:
-              "conic-gradient(#4f46e5 0deg 60deg, #059669 60deg 120deg, #d97706 120deg 180deg, #8b7cf6 180deg 240deg, #dc2626 240deg 300deg, #34395c 300deg 360deg)",
+              "conic-gradient(#2563eb 0deg 60deg, #60a5fa 60deg 120deg, #f2c14e 120deg 180deg, #059669 180deg 240deg, #ef4444 240deg 300deg, #1e3a8a 300deg 360deg)",
           }}
         />
-        <p className="font-mono-label text-[11px] text-impact-ink-dim">
+        <p className="font-mono-label text-[12px] text-impact-ink-dim">
           {role ? "결과가 공개됐습니다" : "교사가 룰렛을 실행하면 자동 시작"}
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {role ? (
           <>
             <Card label="미래의 나" dark>
-              <p className="text-[13px] italic text-impact-ink">"{role.headline}"</p>
-              <p className="mt-1.5 text-[12px] text-impact-ink-dim">{role.situation}</p>
-              <p className="mt-1.5 text-[11px] text-impact-ink-dim">우선순위: {role.priorities.join(", ")}</p>
+              <p className="text-xl italic text-impact-ink">"{role.headline}"</p>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-impact-ink-dim">{role.situation}</p>
+              <p className="mt-2 text-[12px] text-impact-ink-dim">우선순위: {role.priorities.join(", ")}</p>
             </Card>
             {stability && gap && (
-              <div className="flex gap-2">
-                <div className="flex-1 rounded-xl border border-impact-line bg-impact-surface px-3 py-2.5">
-                  <div className="font-mono-label text-[9.5px] uppercase text-impact-ink-dim">내 삶의 안정도</div>
-                  <div className="mt-1 text-sm font-bold text-impact-ink">{STABILITY_LABEL[stability]}</div>
+              <div className="flex gap-3">
+                <div className="flex-1 rounded-xl border border-impact-line bg-impact-surface px-4 py-3">
+                  <div className="font-mono-label text-[10px] uppercase text-impact-ink-dim">내 삶의 안정도</div>
+                  <div className="mt-1 text-base font-bold text-impact-ink">{STABILITY_LABEL[stability]}</div>
+                  <div className="mt-1.5 text-[11.5px] leading-snug text-impact-ink-dim">{STABILITY_DESC[stability]}</div>
                 </div>
-                <div className="flex-1 rounded-xl border border-impact-line bg-impact-surface px-3 py-2.5">
-                  <div className="font-mono-label text-[9.5px] uppercase text-impact-ink-dim">사회 격차</div>
-                  <div className="mt-1 text-sm font-bold text-impact-ink">{GAP_LABEL[gap]}</div>
+                <div className="flex-1 rounded-xl border border-impact-line bg-impact-surface px-4 py-3">
+                  <div className="font-mono-label text-[10px] uppercase text-impact-ink-dim">사회 격차</div>
+                  <div className="mt-1 text-base font-bold text-impact-ink">{GAP_LABEL[gap]}</div>
+                  <div className="mt-1.5 text-[11.5px] leading-snug text-impact-ink-dim">{GAP_DESC[gap]}</div>
                 </div>
               </div>
             )}
             <Card label="성찰" dark>
-              <p className="text-[13px] italic text-impact-ink">"{REFLECTION_PROMPT}"</p>
+              <p className="text-[15px] italic text-impact-ink">"{REFLECTION_PROMPT}"</p>
             </Card>
           </>
         ) : (
           <Card dark>
-            <p className="text-[12px] text-impact-ink-dim">아직 역할이 공개되지 않았습니다.</p>
+            <p className="text-[13px] text-impact-ink-dim">아직 역할이 공개되지 않았습니다.</p>
           </Card>
         )}
       </div>

@@ -7,6 +7,7 @@ import { RoleReveal } from "../../components/RoleReveal";
 import { EventCardsView } from "../../components/EventCardsView";
 import { Card, Chip, PrimaryButton } from "../../components/ui";
 import { useDebouncedField } from "../../components/useDebouncedField";
+import { IntroFlow } from "../../components/IntroModals";
 import { EVENT_CARDS, pickEventCards } from "../../data/events";
 import { computeOrientation } from "../../data/logic";
 import { REFLECTION_PROMPT, roleById } from "../../data/roles";
@@ -51,14 +52,12 @@ export function StudentPlay() {
     case 1:
       return <LobbyScreen code={code} teamId={teamId} session={session} team={team} />;
     case 2:
-      return <DesignScreen code={code} teamId={teamId} session={session} team={team} round={1} />;
+      return <DesignScreen code={code} teamId={teamId} session={session} team={team} />;
     case 3:
       return <RoleRevealScreen session={session} team={team} />;
     case 4:
-      return <EventCardsScreen code={code} teamId={teamId} session={session} team={team} />;
+      return <SecondRoundScreen code={code} teamId={teamId} session={session} team={team} />;
     case 5:
-      return <DesignScreen code={code} teamId={teamId} session={session} team={team} round={2} />;
-    case 6:
       return <PresentationScreen code={code} teamId={teamId} session={session} team={team} onGoWrapUp={() => setWrapUp(true)} />;
     default:
       return null;
@@ -72,7 +71,7 @@ function Screen({
   teamName,
   children,
 }: {
-  stage: 1 | 2 | 4 | 5 | 6;
+  stage: 1 | 2 | 4 | 5;
   stageStartedAt: number | null;
   cta: string;
   teamName: string;
@@ -81,7 +80,7 @@ function Screen({
   return (
     <div className="flex min-h-screen flex-col bg-surface-0">
       <StatusBar stage={stage} stageStartedAt={stageStartedAt} cta={cta} />
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-3 p-4">
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-3 p-6">
         <div className="flex items-center justify-between">
           <Chip tone="brand">{teamName}</Chip>
         </div>
@@ -91,7 +90,7 @@ function Screen({
   );
 }
 
-function LobbyScreen({
+export function LobbyScreen({
   code,
   teamId,
   session,
@@ -108,40 +107,34 @@ function LobbyScreen({
 
   return (
     <Screen stage={1} stageStartedAt={session.stageStartedAt} cta="짝과 이야기하고 한 문장 적기" teamName={team.name}>
-      <Card label="오늘 우리가 할 일">
-        <ol className="flex flex-col gap-1.5 text-[12.5px] text-ink">
-          <li>1. 짝과 함께 정책(세금·예산·최저임금)을 설계합니다.</li>
-          <li>2. 무작위로 정해진 "미래의 나"가 되어, 그 사람에게 일어난 뉴스를 확인합니다.</li>
-          <li>3. 그 관점으로 정책을 다시 설계합니다.</li>
-          <li>4. 여정을 한 장의 카드로 정리해 발표합니다.</li>
-        </ol>
-      </Card>
+      <IntroFlow code={code} teamId={teamId} />
 
-      <Card label="왜 '미래의 나'를 모른 채 시작하나요?">
-        <p className="text-[13px] italic text-ink">"당신은 자신이 어떤 계층으로 태어날지 모릅니다."</p>
-        <p className="mt-2 text-[12px] text-ink-dim">
-          이걸 <b className="text-ink">무지의 베일</b>이라고 불러요. 내가 부자일지 가난할지 모른 채 규칙을 정하면, 오히려 더
-          공정한 규칙을 만들게 된다는 철학자 롤스의 생각입니다.
-        </p>
-      </Card>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
+        <Card label="무지의 베일이란?" className="lg:h-full">
+          <p className="text-[14px] italic text-ink">"당신은 자신이 어떤 계층으로 태어날지 모릅니다."</p>
+          <p className="mt-3 text-[13px] leading-relaxed text-ink-dim">
+            내가 부자일지 가난할지 모른 채 규칙을 정하면, 오히려 더 공정한 규칙을 만들게 된다는 철학자 롤스의 생각입니다.
+          </p>
+        </Card>
 
-      <Card label="지금 할 일 · 5분">
-        <p className="text-[13px] italic text-ink">"내가 가장 불리한 자리에서 태어나도 이 규칙을 받아들일 수 있을까?"</p>
-        <p className="mt-2 mb-2 text-[12px] text-ink-dim">
-          짝과 이야기 나눠보고, 우리 팀이 생각하는 <b className="text-ink">정의로운 사회</b>를 한 문장으로 적어주세요. 정답은
-          없어요 — 다른 팀들의 생각과 함께 교사 화면에 모여 표시됩니다.
-        </p>
-        <textarea
-          value={response}
-          onChange={(e) => handleInput(e.target.value)}
-          placeholder="예: 누구나 최소한의 삶을 보장받는 사회"
-          rows={2}
-          className="w-full resize-none rounded-lg border border-line bg-surface-0 p-2 text-[12.5px] text-ink outline-none focus:border-brand"
-        />
-        <div className="mt-1.5 flex justify-end">
-          <Chip tone={saved ? "good" : "warn"}>{saved ? "저장됨" : "저장 중…"}</Chip>
-        </div>
-      </Card>
+        <Card label="지금 할 일 · 5분">
+          <p className="text-[14px] italic text-ink">"내가 가장 불리한 자리에서 태어나도 이 규칙을 받아들일 수 있을까?"</p>
+          <p className="mt-3 mb-2 text-[13px] leading-relaxed text-ink-dim">
+            짝과 이야기 나눠보고, 우리 팀이 생각하는 <b className="text-ink">정의로운 사회</b>를 한 문장으로 적어주세요. 정답은
+            없어요 — 다른 팀들의 생각과 함께 교사 화면에 모여 표시됩니다.
+          </p>
+          <textarea
+            value={response}
+            onChange={(e) => handleInput(e.target.value)}
+            placeholder="예: 누구나 최소한의 삶을 보장받는 사회"
+            rows={2}
+            className="w-full resize-none rounded-lg border border-line bg-surface-0 p-2.5 text-[13px] text-ink outline-none focus:border-brand"
+          />
+          <div className="mt-1.5 flex justify-end">
+            <Chip tone={saved ? "good" : "warn"}>{saved ? "저장됨" : "저장 중…"}</Chip>
+          </div>
+        </Card>
+      </div>
 
       <p className="font-mono-label text-center text-[11px] text-ink-faint">
         교사가 다음 단계로 넘기면 정책 설계 화면이 자동으로 열립니다.
@@ -150,49 +143,30 @@ function LobbyScreen({
   );
 }
 
-function DesignScreen({
+export function DesignScreen({
   code,
   teamId,
   session,
   team,
-  round,
 }: {
   code: string;
   teamId: string;
   session: SessionState;
   team: Team;
-  round: 1 | 2;
 }) {
-  const stage = round === 1 ? 2 : 5;
-  // 2차 설계는 빈 화면이 아니라 1차 선택을 출발점으로 준다 — "재검토"는
-  // 백지에서 다시 고르는 게 아니라 바꿀 것만 바꾸는 작업이라서다. 이유(reason)는
-  // "왜 바뀌었는지"를 새로 묻는 것이므로 비워서 시작한다.
-  const initialValue: PolicyChoice =
-    round === 1
-      ? (team.design1 ?? {})
-      : (team.design2 ?? (team.design1 ? { tax: team.design1.tax, budget: team.design1.budget, wage: team.design1.wage } : {}));
   // 세션 스토어는 최대 1초 지연으로 반영되기 때문에, 편집 중인 값은
   // 로컬 state를 기준으로 삼고 스토어에는 저장만 fire-and-forget으로 보낸다.
   // (스토어 프롭을 그대로 controlled value로 쓰면 빠른 연속 선택 시 값이 씹힌다.)
-  const [value, setValue] = useState<PolicyChoice>(initialValue);
+  const [value, setValue] = useState<PolicyChoice>(team.design1 ?? {});
 
   function persist(next: PolicyChoice) {
-    updateTeam(code, teamId, (t) => {
-      if (round === 1) t.design1 = next;
-      else t.design2 = next;
-    });
+    updateTeam(code, teamId, (t) => (t.design1 = next));
   }
 
   return (
-    <Screen
-      stage={stage}
-      stageStartedAt={session.stageStartedAt}
-      cta={round === 1 ? "상의해서 함께 제출" : "재검토 후 최종 제출"}
-      teamName={team.name}
-    >
+    <Screen stage={2} stageStartedAt={session.stageStartedAt} cta="상의해서 함께 제출" teamName={team.name}>
       <PolicyPicker
         value={value}
-        previousChoice={round === 2 ? team.design1 : undefined}
         onChange={(next) => {
           setValue(next);
           persist(next);
@@ -202,24 +176,26 @@ function DesignScreen({
           setValue(submitted);
           persist(submitted);
         }}
-        submitLabel={round === 1 ? "팀 제출" : "최종 제출"}
+        submitLabel="팀 제출"
       />
     </Screen>
   );
 }
 
-function RoleRevealScreen({ session, team }: { session: SessionState; team: Team }) {
+export function RoleRevealScreen({ session, team }: { session: SessionState; team: Team }) {
   return (
     <div className="flex min-h-screen flex-col bg-impact-bg">
       <StatusBar stage={3} stageStartedAt={session.stageStartedAt} cta="진행 중" dark />
-      <div className="mx-auto flex w-full max-w-2xl flex-1 items-center p-4">
+      <div className="mx-auto flex w-full max-w-4xl flex-1 items-center p-8">
         <RoleReveal roleId={team.roleId} design1={team.design1} />
       </div>
     </div>
   );
 }
 
-function EventCardsScreen({
+// 2차 토론(사건카드)과 2차 설계를 한 화면으로 합쳤다 — 뉴스를 보고 → 그 자리에서
+// 바로 정책을 다시 설계하는 하나의 흐름이라서다.
+export function SecondRoundScreen({
   code,
   teamId,
   session,
@@ -250,8 +226,19 @@ function EventCardsScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards]);
 
+  // 2차 설계도 백지가 아니라 1차 선택을 출발점으로 준다 — "재검토"는 처음부터
+  // 다시 고르는 게 아니라 바꿀 것만 바꾸는 작업이라서다. 이유(reason)는 "왜
+  // 바뀌었는지"를 새로 묻는 것이므로 비워서 시작한다.
+  const initialValue: PolicyChoice =
+    team.design2 ?? (design1 ? { tax: design1.tax, budget: design1.budget, wage: design1.wage } : {});
+  const [value, setValue] = useState<PolicyChoice>(initialValue);
+
+  function persist(next: PolicyChoice) {
+    updateTeam(code, teamId, (t) => (t.design2 = next));
+  }
+
   return (
-    <Screen stage={4} stageStartedAt={session.stageStartedAt} cta="다른 시민의 처지 생각해보기" teamName={team.name}>
+    <Screen stage={4} stageStartedAt={session.stageStartedAt} cta="뉴스를 보고 정책 다시 설계하기" teamName={team.name}>
       <Card label="사건 · 뉴스 카드">
         <p className="mb-2 text-[12px] text-ink-dim">우리 팀이 1차로 설계한 사회에서, 실제로 이런 일들이 벌어졌어요.</p>
         <EventCardsView cards={cards} />
@@ -259,11 +246,25 @@ function EventCardsScreen({
       <Card label="토론 질문">
         <p className="text-[13px] italic text-ink">"다른 시민이라면 이 소식을 어떻게 받아들일까?"</p>
       </Card>
+      <PolicyPicker
+        value={value}
+        previousChoice={design1}
+        onChange={(next) => {
+          setValue(next);
+          persist(next);
+        }}
+        onSubmit={() => {
+          const submitted = { ...value, submittedAt: Date.now() };
+          setValue(submitted);
+          persist(submitted);
+        }}
+        submitLabel="최종 제출"
+      />
     </Screen>
   );
 }
 
-function PresentationScreen({
+export function PresentationScreen({
   code,
   teamId,
   session,
@@ -281,13 +282,13 @@ function PresentationScreen({
   );
 
   return (
-    <Screen stage={6} stageStartedAt={session.stageStartedAt} cta="여정을 정리해서 발표" teamName={team.name}>
+    <Screen stage={5} stageStartedAt={session.stageStartedAt} cta="여정을 정리해서 발표" teamName={team.name}>
       <Card label="우리 팀의 여정">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <PolicyStoryCard n="1차" design={team.design1} />
-          <StoryCard n="역할" text={roleById(team.roleId)?.headline ?? "-"} />
-          <StoryCard n="사건" text={team.eventCardIds?.length ? "확인함" : "-"} />
-          <PolicyStoryCard n="2차" design={team.design2} />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <PolicyStoryCard n="1차 설계" design={team.design1} tone="brand" />
+          <StoryCard n="미래의 나" text={roleById(team.roleId)?.headline ?? "-"} tone="good" />
+          <StoryCard n="사건 카드" text={team.eventCardIds?.length ? "확인함" : "-"} tone="warn" />
+          <PolicyStoryCard n="2차 설계" design={team.design2} tone="crit" />
         </div>
       </Card>
       <Card label="한줄 코멘트">
@@ -306,21 +307,35 @@ function PresentationScreen({
   );
 }
 
-function StoryCard({ n, text }: { n: string; text: string }) {
+type StoryTone = "brand" | "good" | "warn" | "crit";
+const STORY_BORDER: Record<StoryTone, string> = {
+  brand: "border-t-brand",
+  good: "border-t-good",
+  warn: "border-t-warn",
+  crit: "border-t-crit",
+};
+const STORY_LABEL: Record<StoryTone, string> = {
+  brand: "text-brand-ink",
+  good: "text-good",
+  warn: "text-warn",
+  crit: "text-crit",
+};
+
+function StoryCard({ n, text, tone }: { n: string; text: string; tone: StoryTone }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-surface-1 p-2.5 text-[10px]">
-      <span className="font-mono-label text-brand">{n}</span>
-      <span className="text-ink-dim">{text}</span>
+    <div className={`flex flex-col gap-2 rounded-xl border border-line ${STORY_BORDER[tone]} border-t-[3px] bg-surface-1 p-3.5`}>
+      <span className={`font-mono-label text-[10px] ${STORY_LABEL[tone]}`}>{n}</span>
+      <span className="text-[13px] font-semibold leading-snug text-ink">{text}</span>
     </div>
   );
 }
 
-function PolicyStoryCard({ n, design }: { n: string; design?: PolicyChoice }) {
+function PolicyStoryCard({ n, design, tone }: { n: string; design?: PolicyChoice; tone: StoryTone }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-surface-1 p-2.5 text-[10px]">
-      <span className="font-mono-label text-brand">{n}</span>
+    <div className={`flex flex-col gap-2 rounded-xl border border-line ${STORY_BORDER[tone]} border-t-[3px] bg-surface-1 p-3.5`}>
+      <span className={`font-mono-label text-[10px] ${STORY_LABEL[tone]}`}>{n}</span>
       {design ? (
-        <div className="flex flex-col gap-0.5 text-ink-dim">
+        <div className="flex flex-col gap-1 text-[12.5px] font-semibold text-ink">
           <span>{optionLabel("tax", design.tax)}</span>
           <span>{optionLabel("budget", design.budget)}</span>
           <span>{optionLabel("wage", design.wage)}</span>

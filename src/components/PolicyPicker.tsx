@@ -16,6 +16,7 @@ export function PolicyPicker({
   previousChoice?: PolicyChoice;
 }) {
   const complete = Boolean(value.tax && value.budget && value.wage && value.reason?.trim());
+  const isSubmitted = Boolean(value.submittedAt);
 
   // value[c.id]가 아직 없으면(2차 설계를 막 시작해 새로 고르지 않은 상태) "미선택으로
   // 변경됨"처럼 보이는 오해를 막기 위해, 실제로 새로 고른 항목만 변경으로 표시한다.
@@ -23,8 +24,10 @@ export function PolicyPicker({
     ? POLICY_CATEGORIES.filter((c) => previousChoice[c.id] && value[c.id] && previousChoice[c.id] !== value[c.id]).map((c) => c.id)
     : [];
 
+  // 제출된 뒤 선택을 바꾸면 "제출됨" 표시가 그대로 남아있으면 안 된다 —
+  // 다시 제출 버튼을 눌러야 진짜로 제출된 것이어야 한다.
   function select(categoryId: PolicyCategoryId, optionId: string) {
-    onChange({ ...value, [categoryId]: optionId });
+    onChange({ ...value, [categoryId]: optionId, submittedAt: undefined });
   }
 
   return (
@@ -67,18 +70,24 @@ export function PolicyPicker({
       <Card key="reason" label="이 선택의 이유 · 필수">
         <textarea
           value={value.reason ?? ""}
-          onChange={(e) => onChange({ ...value, reason: e.target.value })}
+          onChange={(e) => onChange({ ...value, reason: e.target.value, submittedAt: undefined })}
           placeholder="왜 이 조합을 골랐나요?"
           rows={2}
           className="w-full resize-none rounded-lg border border-line bg-surface-0 p-2 text-[12.5px] text-ink outline-none focus:border-brand"
         />
       </Card>
 
-      <div key="submit" className="flex items-center justify-end">
-        <PrimaryButton onClick={onSubmit} disabled={!complete}>
-          {submitLabel}
-        </PrimaryButton>
-      </div>
+      {isSubmitted ? (
+        <div key="submit" className="flex items-center justify-between gap-2 rounded-xl border border-good bg-good-bg px-4 py-3">
+          <span className="text-[12.5px] font-semibold text-good">제출 완료! 팀원과 함께 다음 단계를 기다려 주세요.</span>
+        </div>
+      ) : (
+        <div key="submit" className="flex items-center justify-end">
+          <PrimaryButton onClick={onSubmit} disabled={!complete}>
+            {submitLabel}
+          </PrimaryButton>
+        </div>
+      )}
     </div>
   );
 }

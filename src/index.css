@@ -1,35 +1,40 @@
 @import "tailwindcss";
 
+/* 톤 참고: saam-kim/mock--trial (사건수첩) — 블루 & 화이트 글래스모피즘,
+   Noto Sans KR + Outfit(숫자·코드 전용) 폰트 페어링. */
+
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", Roboto, "Helvetica Neue", sans-serif;
+  --font-sans: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Outfit", "Noto Sans KR", sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Roboto Mono", monospace;
 
-  --color-surface-0: #f6f7fb;
+  --color-surface-0: #f1f5f9;
   --color-surface-1: #ffffff;
-  --color-surface-2: #edeffa;
-  --color-line: #dde1f0;
-  --color-line-strong: #c6cce8;
+  --color-surface-2: #eff6ff;
+  --color-line: rgba(37, 99, 235, 0.12);
+  --color-line-strong: rgba(37, 99, 235, 0.24);
 
-  --color-ink: #1f2333;
-  --color-ink-dim: #6b7086;
-  --color-ink-faint: #9297ac;
+  --color-ink: #0f172a;
+  --color-ink-dim: #475569;
+  --color-ink-faint: #64748b;
 
-  --color-brand: #4f46e5;
-  --color-brand-ink: #3730a3;
-  --color-brand-dim: #eeecfd;
+  --color-brand: #2563eb;
+  --color-brand-ink: #1e40af;
+  --color-brand-dim: #eff6ff;
+  --color-brand-glow: rgba(37, 99, 235, 0.18);
 
   --color-good: #059669;
   --color-good-bg: #e9f9f2;
   --color-warn: #d97706;
   --color-warn-bg: #fef6e7;
-  --color-crit: #dc2626;
+  --color-crit: #ef4444;
   --color-crit-bg: #fdeceb;
 
-  --color-impact-bg: #0c0f1e;
-  --color-impact-surface: #171b30;
-  --color-impact-line: #33385c;
-  --color-impact-ink: #f4f5ff;
-  --color-impact-ink-dim: #a6abd1;
+  --color-impact-bg: #0a1830;
+  --color-impact-surface: rgba(255, 255, 255, 0.06);
+  --color-impact-line: rgba(96, 165, 250, 0.28);
+  --color-impact-ink: #f2f7ff;
+  --color-impact-ink-dim: #9db3d9;
 }
 
 html, body, #root {
@@ -38,7 +43,11 @@ html, body, #root {
 
 body {
   margin: 0;
-  background: var(--color-surface-0);
+  background-color: var(--color-surface-0);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.5) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(239, 246, 255, 0.7) 0px, transparent 50%);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -48,14 +57,49 @@ body {
   box-sizing: border-box;
 }
 
+/* 라벨/캡션용 — 모노스페이스가 아니라 산세리프를 살짝 벌려서 쓴다 */
 .font-mono-label {
-  font-family: var(--font-mono);
-  letter-spacing: 0.03em;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* 숫자·코드 전용(타이머, 참여 코드) */
+.font-display {
+  font-family: var(--font-display);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-line);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
 @keyframes wai-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(900deg); }
+}
+
+@keyframes wai-pulse-glow {
+  from { box-shadow: 0 0 4px rgba(37, 99, 235, 0.12); }
+  to { box-shadow: 0 0 16px rgba(37, 99, 235, 0.35); }
+}
+
+@keyframes wai-pulse-glow-dark {
+  from { box-shadow: 0 0 6px rgba(96, 165, 250, 0.25); }
+  to { box-shadow: 0 0 22px rgba(96, 165, 250, 0.55); }
+}
+
+.pulse-glow {
+  animation: wai-pulse-glow 2s infinite alternate;
+}
+
+.pulse-glow-dark {
+  animation: wai-pulse-glow-dark 2s infinite alternate;
 }
 
 @media (prefers-reduced-motion: reduce) {

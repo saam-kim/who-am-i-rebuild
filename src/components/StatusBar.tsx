@@ -2,6 +2,8 @@ import { formatClock, useCountdown } from "./useCountdown";
 import type { Stage } from "../types";
 import { STAGE_META } from "../types";
 
+const TOTAL_STAGES = Object.keys(STAGE_META).length;
+
 export function StatusBar({
   stage,
   stageStartedAt,
@@ -21,10 +23,10 @@ export function StatusBar({
       }`}
     >
       <span>
-        {stage}/6 · {STAGE_META[stage].name}
+        {stage}/{TOTAL_STAGES} · {STAGE_META[stage].name}
       </span>
       <span className={dark ? "font-semibold text-impact-ink" : "font-semibold text-ink"}>
-        {formatClock(remaining)} · {cta}
+        <span className={`font-display ${remaining <= 60 ? "text-crit" : ""}`}>{formatClock(remaining)}</span> · {cta}
       </span>
     </div>
   );

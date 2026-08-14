@@ -17,6 +17,7 @@ import { PostItWall } from "../../components/PostItWall";
 import { countWords } from "../../data/wordcloud";
 import { POLICY_CATEGORIES, optionLabel } from "../../data/policies";
 import { pickWeightedRole, roleById } from "../../data/roles";
+import { computeOrientation, ORIENTATION_LABEL, ORIENTATION_RANK } from "../../data/logic";
 import { downloadSessionCsv } from "../../data/csv";
 import { STAGE_META, type SessionState, type Stage, type Team } from "../../types";
 import { PreviewModal } from "./PreviewModal";
@@ -39,8 +40,8 @@ export function TeacherDashboard() {
   const teams = Object.values(session.teams).sort((a, b) => a.joinedAt - b.joinedAt);
 
   return (
-    <div className="min-h-screen bg-surface-2 p-4">
-      <div className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-line bg-surface-1 shadow-[0_30px_60px_-30px_rgba(31,35,51,0.3)]">
+    <div className="min-h-screen p-4">
+      <div className="glass-card mx-auto max-w-6xl overflow-hidden rounded-[14px]">
         <ShellTop
           code={code}
           session={session}
@@ -72,24 +73,33 @@ function ShellTop({
   onExportCsv: () => void;
 }) {
   const remaining = useCountdown(session.stageStartedAt, STAGE_META[session.stage].durationSec);
+  const timeLow = remaining <= 60;
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-line bg-surface-1 px-4 py-3">
+    <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface-1 px-4 py-3">
+      <div className="flex flex-col items-start gap-0.5">
+        <span className="font-mono-label text-[8.5px] uppercase text-ink-faint">참여 코드</span>
+        <span className="font-display pulse-glow rounded-lg border-2 border-brand/15 bg-brand-dim px-3 py-0.5 text-lg font-extrabold tracking-[0.08em] text-brand-ink">
+          {code}
+        </span>
+      </div>
       <div className="flex flex-wrap gap-1.5">
-        {([1, 2, 3, 4, 5, 6] as Stage[]).map((stage) => (
+        {([1, 2, 3, 4, 5] as Stage[]).map((stage) => (
           <button
             key={stage}
             onClick={() => setStage(code, stage)}
-            className={`font-mono-label rounded-full border px-2.5 py-1 text-[10.5px] ${
+            className={`font-mono-label rounded-full border px-2.5 py-1 text-[10.5px] transition-all duration-200 ${
               session.stage === stage
-                ? "border-brand bg-brand text-white font-bold"
-                : "border-line text-ink-dim hover:border-brand"
+                ? "border-brand bg-linear-to-br from-brand to-brand-ink text-white font-bold shadow-[0_4px_10px_rgba(37,99,235,0.25)]"
+                : "border-line text-ink-dim hover:-translate-y-0.5 hover:border-brand"
             }`}
           >
             {stage} {STAGE_META[stage].name}
           </button>
         ))}
       </div>
-      <div className="font-mono-label ml-auto flex items-center gap-1 rounded-lg border border-line bg-surface-2 px-1.5 py-1">
+      <div
+        className={`font-mono-label ml-auto flex items-center gap-1 rounded-lg border px-1.5 py-1 ${timeLow ? "border-crit/30 bg-crit-bg" : "border-line bg-surface-2"}`}
+      >
         <button
           onClick={() => adjustStageTime(code, -60)}
           aria-label="1분 줄이기"
@@ -97,7 +107,7 @@ function ShellTop({
         >
           −
         </button>
-        <span className="px-1 text-[13px] text-ink">{formatClock(remaining)}</span>
+        <span className={`font-display px-1 text-[13px] font-semibold ${timeLow ? "text-crit" : "text-ink"}`}>{formatClock(remaining)}</span>
         <button
           onClick={() => adjustStageTime(code, 60)}
           aria-label="1분 늘리기"
@@ -154,11 +164,9 @@ function StagePanel({ code, session, teams }: { code: string; session: SessionSt
     case 3:
       return <Stage3Panel code={code} session={session} teams={teams} />;
     case 4:
-      return <Stage4Panel teams={teams} />;
+      return <SecondRoundPanel teams={teams} />;
     case 5:
-      return <DesignTablePanel teams={teams} round={2} />;
-    case 6:
-      return <Stage6Panel teams={teams} />;
+      return <PresentationPanel teams={teams} />;
     default:
       return null;
   }
@@ -296,32 +304,121 @@ function Stage3Panel({ code, session, teams }: { code: string; session: SessionS
   );
 }
 
-function Stage4Panel({ teams }: { teams: Team[] }) {
+// 2차 토론(사건카드)과 2차 설계가 학생 화면에서 한 단계로 합쳐졌으니,
+// 교사 화면에서도 "뉴스 확인했는지"와 "2차 제출 현황"을 한 패널에서 같이 본다.
+function SecondRoundPanel({ teams }: { teams: Team[] }) {
   return (
-    <PanelCard label="사건카드 확인 현황">
-      <div className="flex flex-wrap gap-2">
-        {teams.map((team) => (
-          <Chip key={team.id} tone={team.eventCardIds?.length ? "good" : "warn"}>
-            {team.name} {team.eventCardIds?.length ? "확인함" : "대기중"}
-          </Chip>
-        ))}
-      </div>
+    <div className="flex flex-col gap-3">
+      <PanelCard label="사건카드 확인 현황">
+        <div className="flex flex-wrap gap-2">
+          {teams.map((team) => (
+            <Chip key={team.id} tone={team.eventCardIds?.length ? "good" : "warn"}>
+              {team.name} {team.eventCardIds?.length ? "확인함" : "대기중"}
+            </Chip>
+          ))}
+        </div>
+      </PanelCard>
+      <DesignTablePanel teams={teams} round={2} />
+    </div>
+  );
+}
+
+// 팀별로 1차 설계가 어떤 옵션에 얼마나 몰렸는지(역할 공개 전 학급 전체 분포)
+function DesignDistributionPanel({ teams }: { teams: Team[] }) {
+  const submittedTeams = teams.filter((t) => t.design1?.submittedAt);
+  return (
+    <PanelCard label="학급 전체 1차 설계 분포 · 역할 공개 전">
+      {submittedTeams.length === 0 ? (
+        <p className="text-[12px] text-ink-faint">아직 제출한 팀이 없어요.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {POLICY_CATEGORIES.map((category) => (
+            <div key={category.id}>
+              <p className="font-mono-label mb-1 text-[10px] uppercase text-ink-faint">{category.title}</p>
+              <div className="flex flex-col gap-1">
+                {category.options.map((option) => {
+                  const count = submittedTeams.filter((t) => t.design1?.[category.id] === option.id).length;
+                  const pct = Math.round((count / submittedTeams.length) * 100);
+                  return (
+                    <div key={option.id} className="flex items-center gap-2 text-[11px]">
+                      <span className="w-20 flex-none text-ink-dim">{option.label}</span>
+                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-surface-2">
+                        <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="font-mono-label w-14 flex-none text-right text-ink-faint">
+                        {count}팀 · {pct}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </PanelCard>
   );
 }
 
-function Stage6Panel({ teams }: { teams: Team[] }) {
+// 역할을 겪은 뒤 각 팀의 정책 성향이 효율↔보장 축에서 어느 쪽으로 옮겨갔는지
+function RoleShiftPanel({ teams }: { teams: Team[] }) {
+  const rows = teams
+    .filter((t) => t.design1?.submittedAt && t.design2?.submittedAt && t.roleId)
+    .map((team) => {
+      const role = roleById(team.roleId);
+      const o1 = computeOrientation(team.design1!);
+      const o2 = computeOrientation(team.design2!);
+      const delta = ORIENTATION_RANK[o2] - ORIENTATION_RANK[o1];
+      return { team, role, o1, o2, delta };
+    });
+  const movedTowardSecurity = rows.filter((r) => r.delta > 0).length;
+
   return (
-    <PanelCard label="팀별 발표 카드">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {teams.map((team) => (
-          <div key={team.id} className="rounded-lg border border-line bg-surface-0 p-3 text-[12px]">
-            <p className="font-semibold text-ink">{team.name}</p>
-            <p className="mt-1 text-ink-dim">{roleById(team.roleId)?.headline ?? "역할 미공개"}</p>
-            <p className="mt-1 italic text-ink-dim">{team.presentationComment || "코멘트 없음"}</p>
+    <PanelCard label="역할 공개 후 설계 변화 · 1차 → 2차">
+      {rows.length === 0 ? (
+        <p className="text-[12px] text-ink-faint">아직 2차 제출과 역할 공개가 모두 끝난 팀이 없어요.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <p className="text-[12.5px] text-ink">
+            {rows.length}팀 중 <b className="text-brand-ink">{movedTowardSecurity}팀</b>이 역할을 겪은 뒤 더 보장 쪽으로 정책을
+            옮겼어요.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {rows.map(({ team, role, o1, o2, delta }) => (
+              <div key={team.id} className="flex items-center justify-between gap-2 text-[12px]">
+                <span className="text-ink">
+                  {team.name} <span className="text-ink-faint">· {role?.headline}</span>
+                </span>
+                <span className="font-mono-label flex items-center gap-1 text-[10.5px]">
+                  <span className="text-ink-dim">{ORIENTATION_LABEL[o1]}</span>
+                  <span className="text-ink-faint">→</span>
+                  <Chip tone={delta > 0 ? "good" : delta < 0 ? "crit" : "warn"}>{ORIENTATION_LABEL[o2]}</Chip>
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </PanelCard>
+  );
+}
+
+function PresentationPanel({ teams }: { teams: Team[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <DesignDistributionPanel teams={teams} />
+      <RoleShiftPanel teams={teams} />
+      <PanelCard label="팀별 발표 카드">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {teams.map((team) => (
+            <div key={team.id} className="rounded-lg border border-line bg-surface-0 p-3 text-[12px]">
+              <p className="font-semibold text-ink">{team.name}</p>
+              <p className="mt-1 text-ink-dim">{roleById(team.roleId)?.headline ?? "역할 미공개"}</p>
+              <p className="mt-1 italic text-ink-dim">{team.presentationComment || "코멘트 없음"}</p>
+            </div>
+          ))}
+        </div>
+      </PanelCard>
+    </div>
   );
 }
