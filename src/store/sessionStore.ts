@@ -1,73 +1,64 @@
 import { useCallback, useSyncExternalStore } from "react";
+import { get, onValue, ref, runTransaction, set } from "firebase/database";
+import { db } from "./firebase";
 import type { SessionState, Stage, Team } from "../types";
 import { STAGE_META } from "../types";
 
-// 로컬 데모용 동기화 계층. localStorage에 세션을 저장하고, 다른 탭에는
-// `storage` 이벤트로 변경이 전파됩니다. 나중에 Firebase로 옮길 때는
-// getSnapshot/persist 부분만 실시간 DB 구독으로 바꾸면 됩니다.
+// Firebase Realtime Database 기반 동기화 계층. 세션 문서는 /sessions/{code},
+// 팀 접속 여부(presence)는 /presence/{code}/{teamId} 에 별도로 저장한다 —
+// presence는 몇 초마다 쓰는 고빈도 쓰기라, 세션 문서 안에 두면 단계 전환 같은
+// 다른 쓰기와 충돌할 여지가 커진다.
 
-const SESSION_PREFIX = "wai-session:";
 const MY_TEAM_PREFIX = "wai-my-team:";
-const PRESENCE_PREFIX = "wai-presence:";
 
-function sessionKey(code: string) {
-  return SESSION_PREFIX + code;
+function sessionRef(code: string) {
+  return ref(db, `sessions/${code}`);
 }
 
-function presenceKey(code: string, teamId: string) {
-  return `${PRESENCE_PREFIX}${code}:${teamId}`;
+function presenceRef(code: string, teamId: string) {
+  return ref(db, `presence/${code}/${teamId}`);
 }
 
-function readRaw(code: string): string | null {
-  try {
-    return localStorage.getItem(sessionKey(code));
-  } catch {
-    return null;
-  }
-}
+// ---- 세션 문서 구독 (useSyncExternalStore) ----
+// undefined = 아직 로딩 중, null = 확인 결과 존재하지 않음. 로딩 중을 "없음"과
+// 구분해야 새로고침 직후 "세션을 찾을 수 없어요" 화면이 잠깐 잘못 뜨지 않는다.
 
-function persist(state: SessionState) {
-  const next = { ...state, updatedAt: Date.now() };
-  localStorage.setItem(sessionKey(state.code), JSON.stringify(next));
-}
+const cache = new Map<string, SessionState | null | undefined>();
+const listeners = new Map<string, Set<() => void>>();
+const dbUnsubs = new Map<string, () => void>();
 
-const cache = new Map<string, { raw: string | null; state: SessionState | null }>();
-
-function getSnapshot(code: string): SessionState | null {
-  const raw = readRaw(code);
-  const cached = cache.get(code);
-  if (cached && cached.raw === raw) return cached.state;
-  const state = raw ? (JSON.parse(raw) as SessionState) : null;
-  cache.set(code, { raw, state });
-  return state;
-}
-
-// storage 이벤트는 "다른" 탭에서만 발생하므로, 이 탭 자신의 쓰기는 최대 1초짜리
-// 폴백 폴링에 의존했었다 — 교사가 스스로 누른 버튼 결과가 화면에 늦게 반영되는
-// 원인이었다. 같은 탭 리스너는 즉시 직접 깨운다.
-const localListeners = new Map<string, Set<() => void>>();
-
-function notifyLocal(code: string) {
-  for (const cb of localListeners.get(code) ?? []) cb();
+// Realtime Database는 빈 객체/배열({}나 [])을 자식이 없는 노드로 취급해 쓰기
+// 시점에 조용히 지워버린다 — createSession이 넣은 teams:{}, stageHistory:[]가
+// 그대로 사라져서 읽으면 undefined로 돌아온다. 읽는 지점에서 한 번에 정규화한다.
+function normalizeSession(val: SessionState): SessionState {
+  return { ...val, teams: val.teams ?? {}, stageHistory: val.stageHistory ?? [] };
 }
 
 function subscribe(code: string, callback: () => void) {
-  const handler = (e: StorageEvent) => {
-    if (e.key === sessionKey(code)) callback();
-  };
-  window.addEventListener("storage", handler);
+  if (!listeners.has(code)) listeners.set(code, new Set());
+  listeners.get(code)!.add(callback);
 
-  if (!localListeners.has(code)) localListeners.set(code, new Set());
-  localListeners.get(code)!.add(callback);
+  if (!dbUnsubs.has(code)) {
+    const unsub = onValue(sessionRef(code), (snap) => {
+      cache.set(code, snap.exists() ? normalizeSession(snap.val() as SessionState) : null);
+      for (const cb of listeners.get(code) ?? []) cb();
+    });
+    dbUnsubs.set(code, unsub);
+  }
 
-  // 다른 탭이 localStorage를 만졌지만 이 브라우저가 어떤 이유로 storage
-  // 이벤트를 놓치는 드문 경우를 위한 안전망(느슨한 주기면 충분하다)
-  const interval = window.setInterval(callback, 2000);
   return () => {
-    window.removeEventListener("storage", handler);
-    localListeners.get(code)?.delete(callback);
-    window.clearInterval(interval);
+    listeners.get(code)?.delete(callback);
+    if (listeners.get(code)?.size === 0) {
+      dbUnsubs.get(code)?.();
+      dbUnsubs.delete(code);
+      listeners.delete(code);
+      cache.delete(code);
+    }
   };
+}
+
+function getSnapshot(code: string) {
+  return cache.get(code);
 }
 
 export function useSession(code: string | null) {
@@ -83,9 +74,9 @@ function randomPin(): string {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
-export function createSession(className: string, studentCount: number): string {
+export async function createSession(className: string, studentCount: number): Promise<string> {
   let code = randomPin();
-  while (readRaw(code)) code = randomPin();
+  while (await sessionExists(code)) code = randomPin();
   const teamCount = Math.min(20, Math.max(5, Math.round(studentCount / 2)));
   const now = Date.now();
   const state: SessionState = {
@@ -100,48 +91,48 @@ export function createSession(className: string, studentCount: number): string {
     createdAt: now,
     updatedAt: now,
   };
-  persist(state);
+  await set(sessionRef(code), state);
   return code;
 }
 
-export function sessionExists(code: string): boolean {
-  return readRaw(code) !== null;
+export async function sessionExists(code: string): Promise<boolean> {
+  const snap = await get(sessionRef(code));
+  return snap.exists();
 }
 
-// 같은 브라우저의 여러 탭(교사+학생 리허설)이 동시에 같은 세션 문서를 쓸 수 있어
-// read-modify-write 사이에 다른 탭이 끼어들면 업데이트가 유실될 수 있다.
-// 쓰기 직전에 raw가 그대로인지 다시 확인하고, 바뀌었으면 재시도한다.
-export function updateSession(code: string, mutator: (draft: SessionState) => void) {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const rawBefore = readRaw(code);
-    if (!rawBefore) return;
-    const draft: SessionState = JSON.parse(rawBefore);
+// Realtime Database의 트랜잭션은 서버가 충돌을 감지하면 최신 값으로 자동
+// 재시도해준다 — 예전 localStorage 버전의 수동 CAS 재시도 루프를 대체한다.
+//
+// 주의: 이 브라우저 탭이 해당 경로를 한 번도 구독한 적이 없으면(예: 방금
+// /join에서 넘어온 학생 탭) 로컬 캐시가 비어 있어서 콜백의 첫 호출은 무조건
+// current===null로 들어온다 — 이건 "세션이 없다"는 뜻이 아니라 "아직 서버
+// 값을 확인 못 했다"는 뜻이다. 여기서 undefined를 반환해 중단해버리면 SDK가
+// 서버의 진짜 값과 대조해 재시도할 기회 자체를 뺏는다(실제로 이렇게 팀 참여가
+// 통째로 사라지는 버그였다). 그래서 null이어도 항상 mutator를 실행해서 낙관적
+// 쓰기를 시도하고, 서버에 진짜 값이 있으면 SDK가 알아서 그 값으로 재시도한다.
+export async function updateSession(code: string, mutator: (draft: SessionState) => void) {
+  await runTransaction(sessionRef(code), (current: SessionState | null) => {
+    const draft = normalizeSession(current ?? ({} as SessionState));
     mutator(draft);
     draft.updatedAt = Date.now();
-
-    const rawNow = readRaw(code);
-    if (rawNow !== rawBefore) continue; // 다른 탭이 그 사이에 썼다 — 최신값으로 재시도
-
-    const next = JSON.stringify(draft);
-    localStorage.setItem(sessionKey(code), next);
-    cache.set(code, { raw: next, state: draft });
-    notifyLocal(code);
-    return;
-  }
+    return draft;
+  });
 }
 
-export function setStage(code: string, stage: Stage) {
-  updateSession(code, (s) => {
-    s.stageHistory.push(s.stage);
+export async function setStage(code: string, stage: Stage) {
+  await updateSession(code, (s) => {
+    s.stageHistory = [...(s.stageHistory ?? []), s.stage];
     s.stage = stage;
     s.stageStartedAt = Date.now();
   });
 }
 
-export function undoStage(code: string) {
-  updateSession(code, (s) => {
-    const prev = s.stageHistory.pop();
+export async function undoStage(code: string) {
+  await updateSession(code, (s) => {
+    const history = s.stageHistory ?? [];
+    const prev = history[history.length - 1];
     if (prev !== undefined) {
+      s.stageHistory = history.slice(0, -1);
       s.stage = prev;
       s.stageStartedAt = Date.now();
     }
@@ -151,8 +142,8 @@ export function undoStage(code: string) {
 // 남은 시간을 deltaSec만큼 늘리거나 줄인다(음수 가능). stageStartedAt을
 // 옮기는 방식이라 별도 상태 없이도 카운트다운 로직과 그대로 맞물리고,
 // 원래 배정 시간을 넘어서는 연장도 자연스럽게 허용된다.
-export function adjustStageTime(code: string, deltaSec: number) {
-  updateSession(code, (s) => {
+export async function adjustStageTime(code: string, deltaSec: number) {
+  await updateSession(code, (s) => {
     if (!s.stageStartedAt) return;
     s.stageStartedAt += deltaSec * 1000;
   });
@@ -171,18 +162,20 @@ export function myTeamKey(code: string) {
 // sessionStorage는 탭 단위로 분리된다 — localStorage를 쓰면 같은 브라우저에서
 // 학생 탭을 두 개 열었을 때(리허설 중 흔한 상황) 두 번째 탭이 "이미 참여한 팀"으로
 // 오인해 첫 번째 탭의 팀을 가로채 버린다. "이 탭 = 이 팀" 매핑에는 탭 스코프가 맞다.
+// (기기 간 동기화와는 무관 — 이건 의도적으로 기기/탭 로컬로 남긴다.)
 export function getMyTeamId(code: string): string | null {
   return sessionStorage.getItem(myTeamKey(code));
 }
 
-export function joinTeam(code: string, teamName: string): { teamId: string } | { error: string } {
-  if (!sessionExists(code)) return { error: "존재하지 않는 참여 코드예요." };
-
+export async function joinTeam(code: string, teamName: string): Promise<{ teamId: string } | { error: string }> {
   const existingId = getMyTeamId(code);
-  const existing = getSnapshot(code);
-  if (existingId && existing?.teams[existingId]) {
-    return { teamId: existingId };
+  if (existingId) {
+    const snap = await get(sessionRef(code));
+    const existing = snap.val() as SessionState | null;
+    if (existing?.teams?.[existingId]) return { teamId: existingId };
   }
+
+  if (!(await sessionExists(code))) return { error: "존재하지 않는 참여 코드예요." };
 
   const teamId = `t_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
   const now = Date.now();
@@ -191,7 +184,7 @@ export function joinTeam(code: string, teamName: string): { teamId: string } | {
     name: teamName.trim() || "이름 없는 팀",
     joinedAt: now,
   };
-  updateSession(code, (s) => {
+  await updateSession(code, (s) => {
     s.teams[teamId] = team;
   });
   sessionStorage.setItem(myTeamKey(code), teamId);
@@ -199,38 +192,50 @@ export function joinTeam(code: string, teamName: string): { teamId: string } | {
   return { teamId };
 }
 
-// 접속 여부(presence)는 세션 문서 밖, 팀별 독립된 키에 저장한다.
-// 하트비트는 몇 초마다 반복되는 고빈도 쓰기라, 세션 문서 안에 두면
-// 다른 탭의 쓰기(단계 전환 등)와 충돌할 여지가 커진다.
+// ---- 접속 여부(presence) ----
+// 세션 문서 밖, 팀별 독립된 경로에 저장한다. 고빈도 하트비트 쓰기라 세션 문서와
+// 분리해야 단계 전환 등 다른 쓰기와 충돌하지 않는다. 교사 사이드바가 매 팀마다
+// 동기적으로 읽을 수 있도록, 구독은 한 번만 붙이고 로컬 캐시로 서빙한다.
+
+const presenceCache = new Map<string, Record<string, number>>();
+const presenceUnsubs = new Map<string, () => void>();
+
+function ensurePresenceSubscription(code: string) {
+  if (presenceUnsubs.has(code)) return;
+  const unsub = onValue(ref(db, `presence/${code}`), (snap) => {
+    presenceCache.set(code, (snap.val() as Record<string, number>) ?? {});
+  });
+  presenceUnsubs.set(code, unsub);
+}
+
 export function touchTeam(code: string, teamId: string) {
-  try {
-    localStorage.setItem(presenceKey(code, teamId), String(Date.now()));
-  } catch {
-    // 저장 공간이 없거나 접근 불가한 환경 — 접속 상태 표시만 영향받고 앱은 계속 동작
-  }
+  set(presenceRef(code, teamId), Date.now()).catch(() => {
+    // 오프라인 등으로 쓰기 실패 — 접속 상태 표시만 영향받고 앱은 계속 동작
+  });
 }
 
 export function isTeamConnected(code: string, teamId: string): boolean {
-  const raw = localStorage.getItem(presenceKey(code, teamId));
-  if (!raw) return false;
-  return Date.now() - Number(raw) < 12000;
+  ensurePresenceSubscription(code);
+  const ts = presenceCache.get(code)?.[teamId];
+  if (!ts) return false;
+  return Date.now() - ts < 12000;
 }
 
-export function updateTeam(code: string, teamId: string, mutator: (team: Team) => void) {
-  updateSession(code, (s) => {
+export async function updateTeam(code: string, teamId: string, mutator: (team: Team) => void) {
+  await updateSession(code, (s) => {
     const team = s.teams[teamId];
     if (team) mutator(team);
   });
 }
 
-export function setRouletteMode(code: string, mode: SessionState["rouletteMode"]) {
-  updateSession(code, (s) => {
+export async function setRouletteMode(code: string, mode: SessionState["rouletteMode"]) {
+  await updateSession(code, (s) => {
     s.rouletteMode = mode;
   });
 }
 
-export function revealRoleForTeam(code: string, teamId: string, roleId: string) {
-  updateSession(code, (s) => {
+export async function revealRoleForTeam(code: string, teamId: string, roleId: string) {
+  await updateSession(code, (s) => {
     const team = s.teams[teamId];
     if (team && !team.roleId) {
       team.roleId = roleId;
@@ -239,8 +244,8 @@ export function revealRoleForTeam(code: string, teamId: string, roleId: string) 
   });
 }
 
-export function revealAllRoles(code: string, pickRoleId: () => string) {
-  updateSession(code, (s) => {
+export async function revealAllRoles(code: string, pickRoleId: () => string) {
+  await updateSession(code, (s) => {
     for (const team of Object.values(s.teams)) {
       if (!team.roleId) {
         team.roleId = pickRoleId();

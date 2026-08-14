@@ -28,7 +28,8 @@ export function TeacherDashboard() {
   const session = useSession(code);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  if (!session) {
+  if (session === undefined) return null; // 연결 확인 중
+  if (session === null) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="text-lg font-bold text-ink">세션을 찾을 수 없어요.</p>
@@ -116,8 +117,11 @@ function ShellTop({
           +
         </button>
       </div>
-      <GhostButton tone="warn" onClick={() => undoStage(code)}>
+      <GhostButton tone="warn" onClick={() => undoStage(code)} disabled={session.stageHistory.length === 0}>
         ◂ 단계 되돌리기
+      </GhostButton>
+      <GhostButton tone="brand" onClick={() => setStage(code, (session.stage + 1) as Stage)} disabled={session.stage === 5}>
+        다음 단계로 ▸
       </GhostButton>
       <GhostButton tone="brand" onClick={onOpenPreview}>
         학생 화면 미리보기
@@ -323,11 +327,12 @@ function SecondRoundPanel({ teams }: { teams: Team[] }) {
   );
 }
 
-// 팀별로 1차 설계가 어떤 옵션에 얼마나 몰렸는지(역할 공개 전 학급 전체 분포)
-function DesignDistributionPanel({ teams }: { teams: Team[] }) {
-  const submittedTeams = teams.filter((t) => t.design1?.submittedAt);
+// 팀별로 설계가 어떤 옵션에 얼마나 몰렸는지(학급 전체 분포) — 1차/2차 모두에 재사용
+function DesignDistributionPanel({ teams, round }: { teams: Team[]; round: 1 | 2 }) {
+  const getDesign = (t: Team) => (round === 1 ? t.design1 : t.design2);
+  const submittedTeams = teams.filter((t) => getDesign(t)?.submittedAt);
   return (
-    <PanelCard label="학급 전체 1차 설계 분포 · 역할 공개 전">
+    <PanelCard label={round === 1 ? "학급 전체 1차 설계 분포 · 역할 공개 전" : "학급 전체 2차 설계 분포 · 역할 공개 후"}>
       {submittedTeams.length === 0 ? (
         <p className="text-[12px] text-ink-faint">아직 제출한 팀이 없어요.</p>
       ) : (
@@ -337,7 +342,7 @@ function DesignDistributionPanel({ teams }: { teams: Team[] }) {
               <p className="font-mono-label mb-1 text-[10px] uppercase text-ink-faint">{category.title}</p>
               <div className="flex flex-col gap-1">
                 {category.options.map((option) => {
-                  const count = submittedTeams.filter((t) => t.design1?.[category.id] === option.id).length;
+                  const count = submittedTeams.filter((t) => getDesign(t)?.[category.id] === option.id).length;
                   const pct = Math.round((count / submittedTeams.length) * 100);
                   return (
                     <div key={option.id} className="flex items-center gap-2 text-[11px]">
@@ -406,7 +411,8 @@ function RoleShiftPanel({ teams }: { teams: Team[] }) {
 function PresentationPanel({ teams }: { teams: Team[] }) {
   return (
     <div className="flex flex-col gap-3">
-      <DesignDistributionPanel teams={teams} />
+      <DesignDistributionPanel teams={teams} round={1} />
+      <DesignDistributionPanel teams={teams} round={2} />
       <RoleShiftPanel teams={teams} />
       <PanelCard label="팀별 발표 카드">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">

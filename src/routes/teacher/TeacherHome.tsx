@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createSession, sessionExists } from "../../store/sessionStore";
 import { PrimaryButton } from "../../components/ui";
@@ -8,12 +8,19 @@ const LAST_CODE_KEY = "wai-teacher-last-code";
 export function TeacherHome() {
   const [className, setClassName] = useState("");
   const [studentCount, setStudentCount] = useState(24);
+  const [creating, setCreating] = useState(false);
+  const [lastCodeStillValid, setLastCodeStillValid] = useState(false);
   const navigate = useNavigate();
   const lastCode = localStorage.getItem(LAST_CODE_KEY);
-  const lastCodeStillValid = lastCode && sessionExists(lastCode);
 
-  function handleCreate() {
-    const code = createSession(className.trim() || "무지의 베일 수업", studentCount);
+  useEffect(() => {
+    if (!lastCode) return;
+    sessionExists(lastCode).then(setLastCodeStillValid);
+  }, [lastCode]);
+
+  async function handleCreate() {
+    setCreating(true);
+    const code = await createSession(className.trim() || "무지의 베일 수업", studentCount);
     localStorage.setItem(LAST_CODE_KEY, code);
     navigate(`/teacher/${code}`);
   }
@@ -48,7 +55,9 @@ export function TeacherHome() {
         </label>
 
         <div className="mt-5">
-          <PrimaryButton onClick={handleCreate}>세션 시작</PrimaryButton>
+          <PrimaryButton onClick={handleCreate} disabled={creating}>
+            {creating ? "만드는 중…" : "세션 시작"}
+          </PrimaryButton>
         </div>
 
         {lastCodeStillValid && (

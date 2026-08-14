@@ -45,7 +45,7 @@ export function PreviewModal({ session, onClose }: { session: SessionState; onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-impact-bg/70 p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6" onClick={onClose}>
       <div className="flex w-full max-w-lg flex-col gap-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <span className="font-mono-label text-[12px] text-white">학생 화면 미리보기 · STAGE {session.stage}</span>

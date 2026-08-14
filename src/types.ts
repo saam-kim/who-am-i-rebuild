@@ -18,7 +18,7 @@ export interface PolicyChoice {
   budget?: string;
   wage?: string;
   reason?: string;
-  submittedAt?: number;
+  submittedAt?: number | null;
 }
 
 export type Tier = "vulnerable" | "moderate" | "comfortable";

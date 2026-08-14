@@ -27,7 +27,7 @@ export function PolicyPicker({
   // 제출된 뒤 선택을 바꾸면 "제출됨" 표시가 그대로 남아있으면 안 된다 —
   // 다시 제출 버튼을 눌러야 진짜로 제출된 것이어야 한다.
   function select(categoryId: PolicyCategoryId, optionId: string) {
-    onChange({ ...value, [categoryId]: optionId, submittedAt: undefined });
+    onChange({ ...value, [categoryId]: optionId, submittedAt: null });
   }
 
   return (
@@ -70,7 +70,7 @@ export function PolicyPicker({
       <Card key="reason" label="이 선택의 이유 · 필수">
         <textarea
           value={value.reason ?? ""}
-          onChange={(e) => onChange({ ...value, reason: e.target.value, submittedAt: undefined })}
+          onChange={(e) => onChange({ ...value, reason: e.target.value, submittedAt: null })}
           placeholder="왜 이 조합을 골랐나요?"
           rows={2}
           className="w-full resize-none rounded-lg border border-line bg-surface-0 p-2 text-[12.5px] text-ink outline-none focus:border-brand"

@@ -7,9 +7,10 @@ export function JoinScreen() {
   const [pin, setPin] = useState("");
   const [teamName, setTeamName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
   const navigate = useNavigate();
 
-  function handleJoin() {
+  async function handleJoin() {
     setError(null);
     if (pin.trim().length !== 4) {
       setError("참여 코드 4자리를 입력해 주세요.");
@@ -19,9 +20,11 @@ export function JoinScreen() {
       setError("팀 이름을 입력해 주세요.");
       return;
     }
-    const result = joinTeam(pin.trim(), teamName);
+    setJoining(true);
+    const result = await joinTeam(pin.trim(), teamName);
     if ("error" in result) {
       setError(result.error);
+      setJoining(false);
       return;
     }
     navigate(`/play/${pin.trim()}`);
@@ -57,7 +60,9 @@ export function JoinScreen() {
         {error && <p className="mt-3 text-[12.5px] text-crit">{error}</p>}
 
         <div className="mt-5">
-          <PrimaryButton onClick={handleJoin}>입장하기</PrimaryButton>
+          <PrimaryButton onClick={handleJoin} disabled={joining}>
+            {joining ? "입장하는 중…" : "입장하기"}
+          </PrimaryButton>
         </div>
         <p className="mt-4 text-center text-[11px] text-ink-faint">새로고침해도 같은 팀으로 자동 복구됩니다.</p>
       </div>

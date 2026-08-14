@@ -4,27 +4,15 @@ export function Card({
   label,
   children,
   className = "",
-  dark = false,
 }: {
   label?: string;
   children: ReactNode;
   className?: string;
-  dark?: boolean;
 }) {
-  // dark로 전체 클래스 세트를 통째로 분기한다 — 서로 다른 배경색을 문자열로
-  // 같이 넘기면 Tailwind 캐스케이드 순서상 어느 게 이길지 보장이 안 된다.
   return (
-    <div
-      className={`relative rounded-[14px] border p-4 ${
-        dark
-          ? "border-impact-line bg-impact-surface backdrop-blur-md"
-          : "glass-card border-line"
-      } ${className}`}
-    >
+    <div className={`glass-card relative rounded-[14px] border border-line p-4 ${className}`}>
       {label && (
-        <span
-          className={`font-mono-label absolute -top-2.5 left-3 px-1.5 text-[10px] uppercase ${dark ? "bg-impact-bg text-impact-ink-dim" : "bg-surface-1 text-ink-faint"}`}
-        >
+        <span className="font-mono-label absolute -top-2.5 left-3 bg-surface-1 px-1.5 text-[10px] uppercase text-ink-faint">
           {label}
         </span>
       )}
@@ -77,10 +65,12 @@ export function GhostButton({
   children,
   onClick,
   tone = "ink",
+  disabled = false,
 }: {
   children: ReactNode;
   onClick?: () => void;
   tone?: "ink" | "warn" | "brand";
+  disabled?: boolean;
 }) {
   const toneClass =
     tone === "warn"
@@ -92,7 +82,8 @@ export function GhostButton({
     <button
       type="button"
       onClick={onClick}
-      className={`font-mono-label rounded-full border px-3.5 py-1.5 text-[11px] shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-0.5 ${toneClass}`}
+      disabled={disabled}
+      className={`font-mono-label rounded-full border px-3.5 py-1.5 text-[11px] shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none disabled:hover:translate-y-0 ${toneClass}`}
     >
       {children}
     </button>

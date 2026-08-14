@@ -29,12 +29,6 @@
   --color-warn-bg: #fef6e7;
   --color-crit: #ef4444;
   --color-crit-bg: #fdeceb;
-
-  --color-impact-bg: #0a1830;
-  --color-impact-surface: rgba(255, 255, 255, 0.06);
-  --color-impact-line: rgba(96, 165, 250, 0.28);
-  --color-impact-ink: #f2f7ff;
-  --color-impact-ink-dim: #9db3d9;
 }
 
 html, body, #root {
@@ -89,17 +83,8 @@ body {
   to { box-shadow: 0 0 16px rgba(37, 99, 235, 0.35); }
 }
 
-@keyframes wai-pulse-glow-dark {
-  from { box-shadow: 0 0 6px rgba(96, 165, 250, 0.25); }
-  to { box-shadow: 0 0 22px rgba(96, 165, 250, 0.55); }
-}
-
 .pulse-glow {
   animation: wai-pulse-glow 2s infinite alternate;
-}
-
-.pulse-glow-dark {
-  animation: wai-pulse-glow-dark 2s infinite alternate;
 }
 
 @media (prefers-reduced-motion: reduce) {

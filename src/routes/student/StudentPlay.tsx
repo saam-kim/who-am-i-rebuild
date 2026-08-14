@@ -33,7 +33,8 @@ export function StudentPlay() {
     return () => window.clearInterval(id);
   }, [code, teamId]);
 
-  if (!session) {
+  if (session === undefined) return null; // 연결 확인 중
+  if (session === null) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="text-lg font-bold text-ink">세션을 찾을 수 없어요.</p>
@@ -71,7 +72,7 @@ function Screen({
   teamName,
   children,
 }: {
-  stage: 1 | 2 | 4 | 5;
+  stage: 1 | 2 | 3 | 4 | 5;
   stageStartedAt: number | null;
   cta: string;
   teamName: string;
@@ -184,12 +185,11 @@ export function DesignScreen({
 
 export function RoleRevealScreen({ session, team }: { session: SessionState; team: Team }) {
   return (
-    <div className="flex min-h-screen flex-col bg-impact-bg">
-      <StatusBar stage={3} stageStartedAt={session.stageStartedAt} cta="진행 중" dark />
-      <div className="mx-auto flex w-full max-w-4xl flex-1 items-center p-8">
+    <Screen stage={3} stageStartedAt={session.stageStartedAt} cta="진행 중" teamName={team.name}>
+      <div className="flex flex-1 items-center py-4">
         <RoleReveal roleId={team.roleId} design1={team.design1} />
       </div>
-    </div>
+    </Screen>
   );
 }
 
@@ -242,9 +242,6 @@ export function SecondRoundScreen({
       <Card label="사건 · 뉴스 카드">
         <p className="mb-2 text-[12px] text-ink-dim">우리 팀이 1차로 설계한 사회에서, 실제로 이런 일들이 벌어졌어요.</p>
         <EventCardsView cards={cards} />
-      </Card>
-      <Card label="토론 질문">
-        <p className="text-[13px] italic text-ink">"다른 시민이라면 이 소식을 어떻게 받아들일까?"</p>
       </Card>
       <PolicyPicker
         value={value}
