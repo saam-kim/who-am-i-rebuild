@@ -7,6 +7,8 @@ export interface RoleCard {
   priorities: string[];
   tier: Tier;
   weight: number;
+  /** 역할 공개 룰렛 안에 표시할 짧은 이름 */
+  short: string;
 }
 
 export const REFLECTION_PROMPT = "내가 이 역할이어도, 이 사회의 규칙에 동의할 수 있을까?";
@@ -19,6 +21,7 @@ export const ROLE_CARDS: RoleCard[] = [
     priorities: ["기초 생활 보장", "교육 기회 접근성"],
     tier: "vulnerable",
     weight: 3,
+    short: "학생",
   },
   {
     id: "first-job-youth",
@@ -27,6 +30,7 @@ export const ROLE_CARDS: RoleCard[] = [
     priorities: ["안정적인 일자리", "최저 생계비 보장"],
     tier: "vulnerable",
     weight: 3,
+    short: "청년",
   },
   {
     id: "underfunded-elder",
@@ -35,6 +39,7 @@ export const ROLE_CARDS: RoleCard[] = [
     priorities: ["의료비 지원", "기초연금"],
     tier: "vulnerable",
     weight: 3,
+    short: "노인",
   },
   {
     id: "small-business-owner",
@@ -43,6 +48,7 @@ export const ROLE_CARDS: RoleCard[] = [
     priorities: ["세금 부담 완화", "경기 안정"],
     tier: "moderate",
     weight: 2,
+    short: "자영업",
   },
   {
     id: "working-parent",
@@ -51,6 +57,7 @@ export const ROLE_CARDS: RoleCard[] = [
     priorities: ["보육 지원", "교육비 부담 완화"],
     tier: "moderate",
     weight: 2,
+    short: "직장인",
   },
   {
     id: "high-income-professional",
@@ -59,6 +66,7 @@ export const ROLE_CARDS: RoleCard[] = [
     priorities: ["자산 형성", "세율 안정"],
     tier: "comfortable",
     weight: 1,
+    short: "전문직",
   },
 ];
 

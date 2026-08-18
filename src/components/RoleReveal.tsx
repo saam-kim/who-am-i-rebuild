@@ -1,9 +1,23 @@
 import { useEffect, useRef, useState } from "react";
-import { roleById, REFLECTION_PROMPT } from "../data/roles";
+import { ROLE_CARDS, roleById, REFLECTION_PROMPT } from "../data/roles";
 import { computeGap, computeOrientation, computeStability, GAP_DESC, GAP_LABEL, STABILITY_DESC, STABILITY_LABEL } from "../data/logic";
 import { POLICY_CATEGORIES, optionLabel } from "../data/policies";
 import type { PolicyChoice } from "../types";
 import { Card, PrimaryButton } from "./ui";
+
+// 6개 역할 = 6개 조각. 실제 당첨은 pickWeightedRole()의 가중치 무작위이고
+// 화면의 룰렛은 연출용이라 물리적으로 정확히 그 조각에 "멈추는" 건 아니지만,
+// 적어도 룰렛 안에 어떤 역할들이 있는지는 학생이 읽을 수 있어야 한다.
+const WHEEL_COLORS = ["#2563eb", "#60a5fa", "#f2c14e", "#059669", "#ef4444", "#1e3a8a"];
+const WHEEL_TEXT_COLORS = ["#fff", "#0f172a", "#1a2233", "#fff", "#fff", "#fff"];
+const WHEEL_GEOMETRY = [
+  { path: "M100,100 L100,10 A90,90 0 0,1 177.9,55 Z", label: { x: 130, y: 48 } },
+  { path: "M100,100 L177.9,55 A90,90 0 0,1 177.9,145 Z", label: { x: 160, y: 100 } },
+  { path: "M100,100 L177.9,145 A90,90 0 0,1 100,190 Z", label: { x: 130, y: 152 } },
+  { path: "M100,100 L100,190 A90,90 0 0,1 22.1,145 Z", label: { x: 70, y: 152 } },
+  { path: "M100,100 L22.1,145 A90,90 0 0,1 22.1,55 Z", label: { x: 40, y: 100 } },
+  { path: "M100,100 L22.1,55 A90,90 0 0,1 100,10 Z", label: { x: 70, y: 48 } },
+].map((g, i) => ({ ...g, color: WHEEL_COLORS[i], textColor: WHEEL_TEXT_COLORS[i] }));
 
 export function RoleReveal({
   roleId,
@@ -34,6 +48,7 @@ export function RoleReveal({
   }
 
   const role = roleById(roleId);
+  const wedges = ROLE_CARDS.slice(0, WHEEL_COLORS.length).map((r, i) => ({ role: r, ...WHEEL_GEOMETRY[i] }));
   const orientation = design1 ? computeOrientation(design1) : undefined;
   const stability = role && orientation ? computeStability(orientation, role.tier) : undefined;
   const gap = orientation ? computeGap(orientation) : undefined;
@@ -41,13 +56,27 @@ export function RoleReveal({
   return (
     <div className="grid gap-8 sm:grid-cols-2 sm:items-center">
       <div className="flex flex-col items-center justify-center gap-4">
-        <div
+        <svg
+          viewBox="0 0 200 200"
           className={`h-56 w-56 rounded-full border-4 border-white shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_10px_40px_rgba(37,99,235,0.2)] ${justSpun || spinning ? "animate-[wai-spin_1.8s_cubic-bezier(0.2,0.8,0.2,1)]" : "pulse-glow"}`}
-          style={{
-            background:
-              "conic-gradient(#2563eb 0deg 60deg, #60a5fa 60deg 120deg, #f2c14e 120deg 180deg, #059669 180deg 240deg, #ef4444 240deg 300deg, #1e3a8a 300deg 360deg)",
-          }}
-        />
+        >
+          {wedges.map((w) => (
+            <g key={w.role.id}>
+              <path d={w.path} fill={w.color} />
+              <text
+                x={w.label.x}
+                y={w.label.y}
+                fill={w.textColor}
+                fontSize="13"
+                fontWeight="700"
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                {w.role.short}
+              </text>
+            </g>
+          ))}
+        </svg>
         {role ? (
           <p className="font-mono-label text-[12px] text-ink-faint">결과가 공개됐습니다</p>
         ) : onSpin ? (
