@@ -5,7 +5,6 @@ import { PrimaryButton } from "../../components/ui";
 
 export function JoinScreen() {
   const [pin, setPin] = useState("");
-  const [teamName, setTeamName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const navigate = useNavigate();
@@ -16,12 +15,8 @@ export function JoinScreen() {
       setError("참여 코드 4자리를 입력해 주세요.");
       return;
     }
-    if (!teamName.trim()) {
-      setError("팀 이름을 입력해 주세요.");
-      return;
-    }
     setJoining(true);
-    const result = await joinTeam(pin.trim(), teamName);
+    const result = await joinTeam(pin.trim());
     if ("error" in result) {
       setError(result.error);
       setJoining(false);
@@ -47,16 +42,6 @@ export function JoinScreen() {
           />
         </label>
 
-        <label className="mt-4 block">
-          <span className="font-mono-label text-[10px] uppercase text-ink-faint">우리 팀 이름</span>
-          <input
-            value={teamName}
-            onChange={(e) => setTeamName(e.target.value)}
-            placeholder="예: 하늘 & 별빛"
-            className="mt-1 w-full rounded-[10px] border border-line bg-surface-0 px-3 py-3 text-[14px] text-ink outline-none focus:border-brand"
-          />
-        </label>
-
         {error && <p className="mt-3 text-[12.5px] text-crit">{error}</p>}
 
         <div className="mt-5">
@@ -64,7 +49,7 @@ export function JoinScreen() {
             {joining ? "입장하는 중…" : "입장하기"}
           </PrimaryButton>
         </div>
-        <p className="mt-4 text-center text-[11px] text-ink-faint">새로고침해도 같은 팀으로 자동 복구됩니다.</p>
+        <p className="mt-4 text-center text-[11px] text-ink-faint">팀 이름은 포켓몬 이름으로 자동 배정돼요. 새로고침해도 같은 팀으로 자동 복구됩니다.</p>
       </div>
     </div>
   );

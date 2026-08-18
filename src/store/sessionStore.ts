@@ -158,6 +158,24 @@ export function myTeamKey(code: string) {
   return MY_TEAM_PREFIX + code;
 }
 
+// 팀 이름을 직접 입력하게 하면 실명이나 별명을 적어 개인정보가 노출될 수 있다.
+// 대신 포켓몬 이름을 자동 배정해 같은 세션 안에서는 겹치지 않게 한다.
+const POKEMON_NAMES = [
+  "피카츄", "라이츄", "이상해씨", "이상해꽃", "파이리", "리자몽", "꼬부기", "거북왕",
+  "이브이", "부스터", "쥬피썬더", "폴리곤", "잠만보", "잉어킹", "갸라도스", "메타몽",
+  "뮤", "뮤츠", "고오스", "팬텀", "냐옹", "페르시안", "고라파덕", "야돈",
+  "또가스", "망나뇽", "피죤투", "두두", "델리버드", "루카리오",
+];
+
+function pickTeamName(existingNames: Set<string>): string {
+  const available = POKEMON_NAMES.find((n) => !existingNames.has(n));
+  if (available) return available;
+  // 한 세션에 팀이 30개를 넘는 극단적인 경우를 대비한 안전장치
+  let i = 2;
+  while (existingNames.has(`피카츄 ${i}`)) i++;
+  return `피카츄 ${i}`;
+}
+
 // sessionStorage는 탭 단위로 분리된다 — localStorage를 쓰면 같은 브라우저에서
 // 학생 탭을 두 개 열었을 때(리허설 중 흔한 상황) 두 번째 탭이 "이미 참여한 팀"으로
 // 오인해 첫 번째 탭의 팀을 가로채 버린다. "이 탭 = 이 팀" 매핑에는 탭 스코프가 맞다.
@@ -166,7 +184,7 @@ export function getMyTeamId(code: string): string | null {
   return sessionStorage.getItem(myTeamKey(code));
 }
 
-export async function joinTeam(code: string, teamName: string): Promise<{ teamId: string } | { error: string }> {
+export async function joinTeam(code: string): Promise<{ teamId: string } | { error: string }> {
   const existingId = getMyTeamId(code);
   if (existingId) {
     const snap = await get(sessionRef(code));
@@ -178,12 +196,9 @@ export async function joinTeam(code: string, teamName: string): Promise<{ teamId
 
   const teamId = `t_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
   const now = Date.now();
-  const team: Team = {
-    id: teamId,
-    name: teamName.trim() || "이름 없는 팀",
-    joinedAt: now,
-  };
   await updateSession(code, (s) => {
+    const existingNames = new Set(Object.values(s.teams ?? {}).map((t) => t.name));
+    const team: Team = { id: teamId, name: pickTeamName(existingNames), joinedAt: now };
     s.teams[teamId] = team;
   });
   sessionStorage.setItem(myTeamKey(code), teamId);
