@@ -47,7 +47,6 @@ export interface SessionState {
   stage: Stage;
   stageStartedAt: number | null;
   stageHistory: Stage[];
-  rouletteMode: "all" | "perTeam";
   teams: Record<string, Team>;
   expectedTeamCount: number;
   createdAt: number;

@@ -58,7 +58,9 @@ export function PreviewModal({ session, onClose }: { session: SessionState; onCl
           {demoSession.stage === 2 && (
             <DesignScreen code={PREVIEW_CODE} teamId={PREVIEW_TEAM_ID} session={demoSession} team={demoTeam} />
           )}
-          {demoSession.stage === 3 && <RoleRevealScreen session={demoSession} team={demoTeam} />}
+          {demoSession.stage === 3 && (
+            <RoleRevealScreen code={PREVIEW_CODE} teamId={PREVIEW_TEAM_ID} session={demoSession} team={demoTeam} />
+          )}
           {demoSession.stage === 4 && (
             <SecondRoundScreen code={PREVIEW_CODE} teamId={PREVIEW_TEAM_ID} session={demoSession} team={demoTeam} />
           )}

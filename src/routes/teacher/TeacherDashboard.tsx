@@ -5,7 +5,6 @@ import {
   isTeamConnected,
   revealAllRoles,
   revealRoleForTeam,
-  setRouletteMode,
   setStage,
   undoStage,
   useSession,
@@ -27,6 +26,7 @@ export function TeacherDashboard() {
   const navigate = useNavigate();
   const session = useSession(code);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 
   if (session === undefined) return null; // 연결 확인 중
   if (session === null) {
@@ -50,14 +50,21 @@ export function TeacherDashboard() {
           onExportCsv={() => downloadSessionCsv(session)}
         />
         <div className="flex flex-col md:flex-row">
-          <Sidebar code={code} teams={teams} expectedTeamCount={session.expectedTeamCount} />
+          <Sidebar
+            code={code}
+            teams={teams}
+            expectedTeamCount={session.expectedTeamCount}
+            stage={session.stage}
+            onSelectTeam={setSelectedTeam}
+          />
           <main className="min-w-0 flex-1 overflow-x-auto p-4">
-            <StagePanel code={code} session={session} teams={teams} />
+            <StagePanel code={code} session={session} teams={teams} onSelectTeam={setSelectedTeam} />
           </main>
         </div>
       </div>
 
       {previewOpen && <PreviewModal session={session} onClose={() => setPreviewOpen(false)} />}
+      {selectedTeam && <TeamDetailModal team={selectedTeam} onClose={() => setSelectedTeam(null)} />}
     </div>
   );
 }
@@ -131,7 +138,19 @@ function ShellTop({
   );
 }
 
-function Sidebar({ code, teams, expectedTeamCount }: { code: string; teams: Team[]; expectedTeamCount: number }) {
+function Sidebar({
+  code,
+  teams,
+  expectedTeamCount,
+  stage,
+  onSelectTeam,
+}: {
+  code: string;
+  teams: Team[];
+  expectedTeamCount: number;
+  stage: Stage;
+  onSelectTeam: (team: Team) => void;
+}) {
   // isTeamConnected는 세션 문서 밖(별도 presence 키)을 읽으므로, 세션이 안 바뀌어도
   // 접속 상태를 최신으로 보여주려면 이 컴포넌트가 스스로 주기적으로 다시 그려야 한다.
   const [, forceTick] = useState(0);
@@ -139,6 +158,8 @@ function Sidebar({ code, teams, expectedTeamCount }: { code: string; teams: Team
     const id = window.setInterval(() => forceTick((n) => n + 1), 2000);
     return () => window.clearInterval(id);
   }, []);
+
+  const clickable = stage === 5;
 
   return (
     <aside className="flex flex-col gap-2 border-b border-line bg-surface-0 p-4 md:w-56 md:flex-none md:border-b-0 md:border-r">
@@ -149,28 +170,115 @@ function Sidebar({ code, teams, expectedTeamCount }: { code: string; teams: Team
       {teams.map((team) => {
         const online = isTeamConnected(code, team.id);
         return (
-          <div key={team.id} className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface-1 px-2.5 py-1.5 text-[11px]">
+          <button
+            key={team.id}
+            onClick={() => clickable && onSelectTeam(team)}
+            disabled={!clickable}
+            className={`flex items-center justify-between gap-2 rounded-lg border border-line bg-surface-1 px-2.5 py-1.5 text-[11px] ${clickable ? "cursor-pointer hover:-translate-y-0.5 hover:border-brand transition-all duration-200" : "cursor-default"}`}
+          >
             <span className="truncate text-ink">{team.name}</span>
             <Chip tone={online ? "good" : "crit"}>{online ? "온라인" : "오프라인"}</Chip>
-          </div>
+          </button>
         );
       })}
+      {clickable && teams.length > 0 && <p className="text-[10.5px] text-ink-faint">팀을 누르면 1차·2차 설계를 비교해서 볼 수 있어요.</p>}
     </aside>
   );
 }
 
-function StagePanel({ code, session, teams }: { code: string; session: SessionState; teams: Team[] }) {
+// 발표 단계에서 교사가 팀을 눌러 1차·2차 설계를 나란히 비교해서 보는 모달.
+// 학생이 실제로 본 것과 같은 정책 옵션 그리드를 재사용하고, 어느 라운드에
+// 골랐는지를 색으로 구분한다 — 표로 나열하는 것보다 학생 화면과 바로 대응되어
+// 발표 중 교사가 짚어주기 쉽다.
+function TeamDetailModal({ team, onClose }: { team: Team; onClose: () => void }) {
+  const role = roleById(team.roleId);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6" onClick={onClose}>
+      <div className="glass-card max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-ink">{team.name}</h3>
+            {role && <p className="mt-0.5 text-[12px] text-ink-dim">미래의 나: {role.headline}</p>}
+          </div>
+          <GhostButton onClick={onClose}>닫기</GhostButton>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="font-mono-label rounded-full border border-brand/30 bg-brand-dim px-2.5 py-1 text-[10px] text-brand-ink">1차만 (이전 선택)</span>
+          <span className="font-mono-label rounded-full border border-warn/30 bg-warn-bg px-2.5 py-1 text-[10px] text-warn">2차 최종 선택</span>
+          <span className="font-mono-label rounded-full border border-good/30 bg-good-bg px-2.5 py-1 text-[10px] text-good">1·2차 동일</span>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-4">
+          {POLICY_CATEGORIES.map((cat) => (
+            <div key={cat.id}>
+              <p className="font-mono-label mb-1.5 text-[10px] uppercase text-ink-faint">{cat.title}</p>
+              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                {cat.options.map((opt) => {
+                  const picked1 = team.design1?.[cat.id] === opt.id;
+                  const picked2 = team.design2?.[cat.id] === opt.id;
+                  const cls =
+                    picked1 && picked2
+                      ? "border-good bg-good-bg text-good"
+                      : picked2
+                        ? "border-warn bg-warn-bg text-warn"
+                        : picked1
+                          ? "border-brand bg-brand-dim text-brand-ink"
+                          : "border-line bg-surface-0 text-ink-faint";
+                  return (
+                    <div key={opt.id} className={`rounded-lg border px-2.5 py-2 text-[11.5px] font-semibold ${cls}`}>
+                      {opt.label}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {(team.design1?.reason || team.design2?.reason) && (
+          <div className="mt-4 flex flex-col gap-2">
+            {team.design1?.reason && (
+              <div className="rounded-lg border border-line bg-surface-0 p-2.5 text-[12px]">
+                <span className="font-mono-label text-[9px] uppercase text-ink-faint">1차 이유</span>
+                <p className="mt-0.5 text-ink-dim">{team.design1.reason}</p>
+              </div>
+            )}
+            {team.design2?.reason && (
+              <div className="rounded-lg border border-line bg-surface-0 p-2.5 text-[12px]">
+                <span className="font-mono-label text-[9px] uppercase text-ink-faint">2차 이유</span>
+                <p className="mt-0.5 text-ink-dim">{team.design2.reason}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StagePanel({
+  code,
+  session,
+  teams,
+  onSelectTeam,
+}: {
+  code: string;
+  session: SessionState;
+  teams: Team[];
+  onSelectTeam: (team: Team) => void;
+}) {
   switch (session.stage) {
     case 1:
       return <Stage1Panel teams={teams} expectedTeamCount={session.expectedTeamCount} />;
     case 2:
       return <DesignTablePanel teams={teams} round={1} />;
     case 3:
-      return <Stage3Panel code={code} session={session} teams={teams} />;
+      return <Stage3Panel code={code} teams={teams} />;
     case 4:
       return <SecondRoundPanel teams={teams} />;
     case 5:
-      return <PresentationPanel teams={teams} />;
+      return <PresentationPanel teams={teams} onSelectTeam={onSelectTeam} />;
     default:
       return null;
   }
@@ -259,31 +367,19 @@ function DesignTablePanel({ teams, round }: { teams: Team[]; round: 1 | 2 }) {
   );
 }
 
-function Stage3Panel({ code, session, teams }: { code: string; session: SessionState; teams: Team[] }) {
+function Stage3Panel({ code, teams }: { code: string; teams: Team[] }) {
+  const remaining = teams.filter((t) => !t.roleId).length;
   return (
     <div className="flex flex-col gap-3">
-      <PanelCard label="룰렛 실행 컨트롤">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setRouletteMode(code, "all")}
-            className={`font-mono-label rounded-lg border px-3 py-1.5 text-[11px] ${session.rouletteMode === "all" ? "border-brand bg-brand-dim text-brand-ink" : "border-line text-ink-dim"}`}
-          >
-            전체 동시 실행 모드
-          </button>
-          <button
-            onClick={() => setRouletteMode(code, "perTeam")}
-            className={`font-mono-label rounded-lg border px-3 py-1.5 text-[11px] ${session.rouletteMode === "perTeam" ? "border-brand bg-brand-dim text-brand-ink" : "border-line text-ink-dim"}`}
-          >
-            팀별 개별 실행 모드
-          </button>
-        </div>
-        {session.rouletteMode === "all" && (
-          <div className="mt-3">
-            <PrimaryButton onClick={() => revealAllRoles(code, () => pickWeightedRole().id)}>지금 전체 공개</PrimaryButton>
-          </div>
+      <PanelCard label="역할 공개 현황">
+        <p className="mb-3 text-[12px] text-ink-dim">학생들이 각자 화면에서 직접 룰렛을 돌려 역할을 공개합니다.</p>
+        {remaining > 0 && (
+          <GhostButton tone="warn" onClick={() => revealAllRoles(code, () => pickWeightedRole().id)}>
+            아직 안 돌린 {remaining}팀 한번에 공개
+          </GhostButton>
         )}
       </PanelCard>
-      <PanelCard label="공개된 역할">
+      <PanelCard label="팀별 상태">
         <div className="flex flex-col gap-1.5">
           {teams.map((team) => {
             const role = roleById(team.roleId);
@@ -292,12 +388,13 @@ function Stage3Panel({ code, session, teams }: { code: string; session: SessionS
                 <span className="text-ink">{team.name}</span>
                 {role ? (
                   <Chip tone="good">{role.headline}</Chip>
-                ) : session.rouletteMode === "perTeam" ? (
-                  <GhostButton tone="brand" onClick={() => revealRoleForTeam(code, team.id, pickWeightedRole().id)}>
-                    공개
-                  </GhostButton>
                 ) : (
-                  <Chip tone="warn">대기중</Chip>
+                  <div className="flex items-center gap-2">
+                    <Chip tone="warn">대기중</Chip>
+                    <GhostButton tone="brand" onClick={() => revealRoleForTeam(code, team.id, pickWeightedRole().id)}>
+                      지금 공개
+                    </GhostButton>
+                  </div>
                 )}
               </div>
             );
@@ -408,20 +505,24 @@ function RoleShiftPanel({ teams }: { teams: Team[] }) {
   );
 }
 
-function PresentationPanel({ teams }: { teams: Team[] }) {
+function PresentationPanel({ teams, onSelectTeam }: { teams: Team[]; onSelectTeam: (team: Team) => void }) {
   return (
     <div className="flex flex-col gap-3">
       <DesignDistributionPanel teams={teams} round={1} />
       <DesignDistributionPanel teams={teams} round={2} />
       <RoleShiftPanel teams={teams} />
-      <PanelCard label="팀별 발표 카드">
+      <PanelCard label="팀별 발표 카드 · 눌러서 1차·2차 비교">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
-            <div key={team.id} className="rounded-lg border border-line bg-surface-0 p-3 text-[12px]">
+            <button
+              key={team.id}
+              onClick={() => onSelectTeam(team)}
+              className="rounded-lg border border-line bg-surface-0 p-3 text-left text-[12px] transition-all duration-200 hover:-translate-y-0.5 hover:border-brand"
+            >
               <p className="font-semibold text-ink">{team.name}</p>
               <p className="mt-1 text-ink-dim">{roleById(team.roleId)?.headline ?? "역할 미공개"}</p>
               <p className="mt-1 italic text-ink-dim">{team.presentationComment || "코멘트 없음"}</p>
-            </div>
+            </button>
           ))}
         </div>
       </PanelCard>

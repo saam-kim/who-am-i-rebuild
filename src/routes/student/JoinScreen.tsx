@@ -33,7 +33,7 @@ export function JoinScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="glass-card w-full max-w-sm rounded-[14px] p-6">
-        <span className="font-mono-label inline-block rounded-full bg-brand-dim px-3.5 py-1.5 text-[11px] text-brand-ink">Who Am I</span>
+        <span className="font-mono-label inline-block rounded-full bg-brand-dim px-3.5 py-1.5 text-[11px] text-brand-ink">무지의 베일</span>
         <h1 className="mt-4 text-xl font-extrabold tracking-tight text-ink">참여 코드를 입력하세요</h1>
 
         <label className="mt-5 block">

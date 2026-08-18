@@ -85,7 +85,6 @@ export async function createSession(className: string, studentCount: number): Pr
     stage: 1,
     stageStartedAt: now,
     stageHistory: [],
-    rouletteMode: "all",
     teams: {},
     expectedTeamCount: teamCount,
     createdAt: now,
@@ -225,12 +224,6 @@ export async function updateTeam(code: string, teamId: string, mutator: (team: T
   await updateSession(code, (s) => {
     const team = s.teams[teamId];
     if (team) mutator(team);
-  });
-}
-
-export async function setRouletteMode(code: string, mode: SessionState["rouletteMode"]) {
-  await updateSession(code, (s) => {
-    s.rouletteMode = mode;
   });
 }
 

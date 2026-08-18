@@ -9,7 +9,7 @@ export interface RoleCard {
   weight: number;
 }
 
-export const REFLECTION_PROMPT = "이 사회 설계가 나를 존중하는가?";
+export const REFLECTION_PROMPT = "내가 이 역할이어도, 이 사회의 규칙에 동의할 수 있을까?";
 
 export const ROLE_CARDS: RoleCard[] = [
   {
