@@ -33,7 +33,13 @@ export function StudentPlay() {
     return () => window.clearInterval(id);
   }, [code, teamId]);
 
-  if (session === undefined) return null; // 연결 확인 중
+  if (session === undefined) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6 text-center">
+        <p className="font-mono-label text-sm text-ink-dim">세션 불러오는 중…</p>
+      </div>
+    );
+  }
   if (session === null) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">

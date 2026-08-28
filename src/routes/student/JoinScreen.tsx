@@ -16,13 +16,19 @@ export function JoinScreen() {
       return;
     }
     setJoining(true);
-    const result = await joinTeam(pin.trim());
-    if ("error" in result) {
-      setError(result.error);
+    try {
+      const result = await joinTeam(pin.trim());
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      navigate(`/play/${pin.trim()}`);
+    } catch (err) {
+      console.error("입장 실패:", err);
+      setError("입장에 실패했습니다. 네트워크 상태 또는 코드를 확인해주세요.");
+    } finally {
       setJoining(false);
-      return;
     }
-    navigate(`/play/${pin.trim()}`);
   }
 
   return (

@@ -9,20 +9,28 @@ export function TeacherHome() {
   const [className, setClassName] = useState("");
   const [studentCount, setStudentCount] = useState(24);
   const [creating, setCreating] = useState(false);
-  const [lastCodeStillValid, setLastCodeStillValid] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const lastCode = localStorage.getItem(LAST_CODE_KEY);
 
   useEffect(() => {
     if (!lastCode) return;
-    sessionExists(lastCode).then(setLastCodeStillValid);
+    sessionExists(lastCode).then(setLastCodeStillValid).catch(() => setLastCodeStillValid(false));
   }, [lastCode]);
 
   async function handleCreate() {
+    setError(null);
     setCreating(true);
-    const code = await createSession(className.trim() || "무지의 베일 수업", studentCount);
-    localStorage.setItem(LAST_CODE_KEY, code);
-    navigate(`/teacher/${code}`);
+    try {
+      const code = await createSession(className.trim() || "무지의 베일 수업", studentCount);
+      localStorage.setItem(LAST_CODE_KEY, code);
+      navigate(`/teacher/${code}`);
+    } catch (err) {
+      console.error("세션 생성 실패:", err);
+      setError("세션을 생성하지 못했습니다. 네트워크 상태 또는 Firebase 연결을 확인해주세요.");
+    } finally {
+      setCreating(false);
+    }
   }
 
   const teamCount = Math.min(20, Math.max(5, Math.round(studentCount / 2)));
@@ -53,6 +61,8 @@ export function TeacherHome() {
           />
           <span className="mt-1 block text-[11.5px] text-ink-dim">2인 1팀 기준 약 {teamCount}팀이 자동으로 구성됩니다 (5~20팀).</span>
         </label>
+
+        {error && <p className="mt-3 text-[12.5px] text-crit">{error}</p>}
 
         <div className="mt-5">
           <PrimaryButton onClick={handleCreate} disabled={creating}>
