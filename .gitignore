@@ -25,3 +25,4 @@ dist-ssr
 
 # 홍보자료 (로컬 전용, git 추적 제외)
 promo/
+.vercel
