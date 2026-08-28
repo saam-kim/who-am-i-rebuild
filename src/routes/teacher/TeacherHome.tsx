@@ -10,6 +10,7 @@ export function TeacherHome() {
   const [studentCount, setStudentCount] = useState(24);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastCodeStillValid, setLastCodeStillValid] = useState(false);
   const navigate = useNavigate();
   const lastCode = localStorage.getItem(LAST_CODE_KEY);
 
