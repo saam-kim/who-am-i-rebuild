@@ -24,4 +24,4 @@ npm run dev
 
 ## 기술 스택
 
-Vite + React 19 + TypeScript + Tailwind CSS v4. GitHub Actions로 GitHub Pages에 자동 배포됩니다(`main` 브랜치 푸시 시).
+Vite + React 19 + TypeScript + Tailwind CSS v4 + Firebase Realtime Database. Vercel을 통해 배포됩니다.
