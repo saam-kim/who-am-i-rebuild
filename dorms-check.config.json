@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "무지의 베일 — 정의로운 사회 만들기",
+    "url": "https://who-am-i-rebuild.vercel.app",
+    "stack": "Vite"
+  },
+  "tracks": [
+    "security",
+    "edzip",
+    "protection"
+  ],
+  "edzipCase": null,
+  "teacher": {
+    "dormsHandle": ""
+  },
+  "ownershipConfirmed": true
+}
