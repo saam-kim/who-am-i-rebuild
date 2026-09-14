@@ -3,6 +3,7 @@ import { get, onValue, ref, runTransaction, set } from "firebase/database";
 import { db } from "./firebase";
 import type { SessionState, Stage, Team } from "../types";
 import { STAGE_META } from "../types";
+import { safeSessionStorage } from "../utils/storage";
 
 // Firebase Realtime Database 기반 동기화 계층. 세션 문서는 /sessions/{code},
 // 팀 접속 여부(presence)는 /presence/{code}/{teamId} 에 별도로 저장한다 —
@@ -181,7 +182,7 @@ function pickTeamName(existingNames: Set<string>): string {
 // 오인해 첫 번째 탭의 팀을 가로채 버린다. "이 탭 = 이 팀" 매핑에는 탭 스코프가 맞다.
 // (기기 간 동기화와는 무관 — 이건 의도적으로 기기/탭 로컬로 남긴다.)
 export function getMyTeamId(code: string): string | null {
-  return sessionStorage.getItem(myTeamKey(code));
+  return safeSessionStorage.getItem(myTeamKey(code));
 }
 
 export async function joinTeam(code: string): Promise<{ teamId: string } | { error: string }> {
@@ -201,7 +202,7 @@ export async function joinTeam(code: string): Promise<{ teamId: string } | { err
     const team: Team = { id: teamId, name: pickTeamName(existingNames), joinedAt: now };
     s.teams[teamId] = team;
   });
-  sessionStorage.setItem(myTeamKey(code), teamId);
+  safeSessionStorage.setItem(myTeamKey(code), teamId);
   touchTeam(code, teamId);
   return { teamId };
 }

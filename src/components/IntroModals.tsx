@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { safeLocalStorage } from "../utils/storage";
 
 // saam-kim/sejong-gerrymandering-rebuild의 "이 활동은 왜 하는 걸까요?" → "지켜야 할 규칙"
 // 2단 팝업 패턴을 그대로 가져왔다. 그라데이션 헤더 + 아이콘, 색 배지가 있는 목록,
@@ -101,7 +102,7 @@ function introSeenKey(code: string, teamId: string) {
 
 export function IntroFlow({ code, teamId }: { code: string; teamId: string }) {
   const [phase, setPhase] = useState<"why" | "today" | "done">(() =>
-    localStorage.getItem(introSeenKey(code, teamId)) ? "done" : "why",
+    safeLocalStorage.getItem(introSeenKey(code, teamId)) ? "done" : "why",
   );
 
   if (phase === "why") return <WhyModal onClose={() => setPhase("today")} />;
@@ -109,7 +110,7 @@ export function IntroFlow({ code, teamId }: { code: string; teamId: string }) {
     return (
       <TodayModal
         onClose={() => {
-          localStorage.setItem(introSeenKey(code, teamId), "1");
+          safeLocalStorage.setItem(introSeenKey(code, teamId), "1");
           setPhase("done");
         }}
       />

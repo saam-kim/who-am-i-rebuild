@@ -9,7 +9,9 @@ export function JoinScreen() {
   const [joining, setJoining] = useState(false);
   const navigate = useNavigate();
 
-  async function handleJoin() {
+  async function handleJoin(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (joining) return;
     setError(null);
     if (pin.trim().length !== 4) {
       setError("참여 코드 4자리를 입력해 주세요.");
@@ -37,24 +39,34 @@ export function JoinScreen() {
         <span className="font-mono-label inline-block rounded-full bg-brand-dim px-3.5 py-1.5 text-[11px] text-brand-ink">무지의 베일</span>
         <h1 className="mt-4 text-xl font-extrabold tracking-tight text-ink">참여 코드를 입력하세요</h1>
 
-        <label className="mt-5 block">
-          <span className="font-mono-label text-[10px] uppercase text-ink-faint">참여 코드 (PIN)</span>
-          <input
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            inputMode="numeric"
-            placeholder="0000"
-            className="font-display mt-1 w-full rounded-[10px] border-2 border-line bg-surface-0 px-3 py-3 text-center text-2xl font-bold tracking-[0.3em] text-brand-ink outline-none focus:border-brand"
-          />
-        </label>
+        <form onSubmit={handleJoin} className="mt-5">
+          <label className="block">
+            <span className="font-mono-label text-[10px] uppercase text-ink-faint">참여 코드 (PIN)</span>
+            <input
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              inputMode="numeric"
+              placeholder="0000"
+              autoFocus
+              className="font-display mt-1 w-full rounded-[10px] border-2 border-line bg-surface-0 px-3 py-3 text-center text-2xl font-bold tracking-[0.3em] text-brand-ink outline-none focus:border-brand"
+            />
+          </label>
 
-        {error && <p className="mt-3 text-[12.5px] text-crit">{error}</p>}
+          {error && (
+            <div className="mt-3 rounded-[10px] border border-crit/30 bg-crit-bg/40 p-3 text-[12.5px] text-crit leading-relaxed">
+              <p className="font-semibold">{error}</p>
+              <p className="mt-1 text-[11.5px] text-ink-dim">
+                💡 참여 코드를 다시 확인하거나, 광고 차단기(AdBlock)가 켜져 있다면 꺼주세요.
+              </p>
+            </div>
+          )}
 
-        <div className="mt-5">
-          <PrimaryButton onClick={handleJoin} disabled={joining}>
-            {joining ? "입장하는 중…" : "입장하기"}
-          </PrimaryButton>
-        </div>
+          <div className="mt-5">
+            <PrimaryButton type="submit" disabled={joining}>
+              {joining ? "입장하는 중…" : "입장하기"}
+            </PrimaryButton>
+          </div>
+        </form>
         <p className="mt-4 text-center text-[11px] text-ink-faint">팀 이름은 포켓몬 이름으로 자동 배정돼요. 새로고침해도 같은 팀으로 자동 복구됩니다.</p>
       </div>
     </div>
