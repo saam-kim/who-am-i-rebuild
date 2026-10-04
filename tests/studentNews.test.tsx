@@ -72,4 +72,3 @@ describe("학생 뉴스 화면", () => {
     expect(updateTeam).not.toHaveBeenCalled();
   });
 });
-
