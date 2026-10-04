@@ -1,5 +1,6 @@
 import type { EventCard } from "../data/events";
 import { Chip } from "./ui";
+import { optionLabel, POLICY_CATEGORIES } from "../data/policies";
 
 const SHAPE: Record<EventCard["status"], string> = { good: "●", warn: "▲", mixed: "■" };
 const TONE: Record<EventCard["status"], "good" | "warn" | "crit"> = { good: "good", warn: "warn", mixed: "crit" };
@@ -12,6 +13,7 @@ export function EventCardsView({ cards }: { cards: EventCard[] }) {
       {cards.map((card) => (
         <div key={card.id} className="flex w-40 flex-none flex-col gap-1.5 rounded-xl border border-line bg-surface-1 p-2.5">
           <span className={`font-mono-label text-sm ${SHAPE_COLOR[card.status]}`}>{SHAPE[card.status]}</span>
+          <span className="text-[10px] text-brand-ink">{POLICY_CATEGORIES.find((category) => category.id === card.category)?.title} · {optionLabel(card.category, card.optionId)}</span>
           <span className="text-[11.5px] font-semibold text-ink">{card.headline}</span>
           <span className="text-[10.5px] text-ink-dim">{card.body}</span>
           <Chip tone={TONE[card.status]}>{LABEL[card.status]}</Chip>

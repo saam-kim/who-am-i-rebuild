@@ -20,8 +20,8 @@ export const POLICY_CATEGORIES: PolicyCategory[] = [
     title: "세금 정책",
     options: [
       { id: "low", label: "낮은 세금형", description: "세금을 적게 걷고 개인이 알아서 쓰게 합니다.", tilt: 1 },
-      { id: "shared", label: "공동 부담형", description: "모두가 비슷한 비율로 나눠 부담합니다.", tilt: 2 },
-      { id: "ability", label: "능력 부담형", description: "더 버는 사람이 더 많이 부담합니다.", tilt: 3 },
+      { id: "shared", label: "공동 부담형", description: "소득에 비슷한 비율의 세금을 적용합니다.", tilt: 2 },
+      { id: "ability", label: "능력 부담형", description: "소득이 높을수록 더 높은 비율로 세금을 부담합니다.", tilt: 3 },
     ],
   },
   {

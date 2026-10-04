@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getMyTeamId, revealRoleForTeam, touchTeam, updateTeam, useSession } from "../../store/sessionStore";
 import { StatusBar } from "../../components/StatusBar";
@@ -8,7 +8,7 @@ import { EventCardsView } from "../../components/EventCardsView";
 import { Card, Chip, PrimaryButton } from "../../components/ui";
 import { useDebouncedField } from "../../components/useDebouncedField";
 import { IntroFlow } from "../../components/IntroModals";
-import { EVENT_CARDS, pickEventCards } from "../../data/events";
+import { useTeamEventCards } from "../../components/useTeamEventCards";
 import { computeGap, computeOrientation, computeStability, GAP_LABEL, ORIENTATION_LABEL, STABILITY_LABEL } from "../../data/logic";
 import { REFLECTION_PROMPT, pickWeightedRole, roleById } from "../../data/roles";
 import { optionLabel } from "../../data/policies";
@@ -108,7 +108,7 @@ export function LobbyScreen({
   session: SessionState;
   team: Team;
 }) {
-  const { value: response, onChange: handleInput, saved } = useDebouncedField(team.stage1Response ?? "", (next) =>
+  const { value: response, onChange: handleInput, saved, error: saveError } = useDebouncedField(team.stage1Response ?? "", (next) =>
     updateTeam(code, teamId, (t) => (t.stage1Response = next)),
   );
 
@@ -140,7 +140,7 @@ export function LobbyScreen({
             className="w-full resize-none rounded-lg border border-line bg-surface-0 p-3 text-[14px] text-ink outline-none focus:border-brand"
           />
           <div className="mt-2 flex justify-end">
-            <Chip tone={saved ? "good" : "warn"}>{saved ? "저장됨" : "저장 중…"}</Chip>
+            <Chip tone={saved ? "good" : "warn"}>{saveError ? "저장 실패 · 입력하면 다시 시도합니다" : saved ? "저장됨" : "저장 중…"}</Chip>
           </div>
         </Card>
       </div>
@@ -246,24 +246,7 @@ export function SecondRoundScreen({
   team: Team;
 }) {
   const design1 = team.design1;
-  const existingIds = team.eventCardIds;
-
-  const cards = useMemo(() => {
-    if (existingIds && existingIds.length) {
-      return EVENT_CARDS.filter((e) => existingIds.includes(e.id));
-    }
-    if (!design1) return [];
-    const orientation = computeOrientation(design1);
-    return pickEventCards(orientation);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingIds, design1]);
-
-  useEffect(() => {
-    if (!existingIds?.length && cards.length) {
-      updateTeam(code, teamId, (t) => (t.eventCardIds = cards.map((c) => c.id)));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards]);
+  const cards = useTeamEventCards(code, teamId, team);
 
   // 2차 설계도 백지가 아니라 1차 선택을 출발점으로 준다 — "재검토"는 처음부터
   // 다시 고르는 게 아니라 바꿀 것만 바꾸는 작업이라서다. 이유(reason)는 "왜
@@ -279,7 +262,8 @@ export function SecondRoundScreen({
   return (
     <Screen stage={4} stageStartedAt={session.stageStartedAt} cta="뉴스를 보고 정책 다시 설계하기" teamName={team.name}>
       <Card label="사건 · 뉴스 카드">
-        <p className="mb-2 text-[12px] text-ink-dim">우리 팀이 1차로 설계한 사회에서, 실제로 이런 일들이 벌어졌어요.</p>
+        <p className="mb-2 text-[12px] text-ink-dim">우리 팀의 1차 정책을 바탕으로 만든 가상 뉴스입니다. 이런 상황이 생긴다면 누구에게 어떤 영향을 줄까요?</p>
+        {!cards.length && <p className="text-[12px] text-warn">1차 설계에서 세금·예산·최저임금을 모두 선택해야 관련 뉴스가 표시됩니다.</p>}
         <EventCardsView cards={cards} />
       </Card>
       <PolicyPicker
@@ -313,12 +297,12 @@ export function PresentationScreen({
   team: Team;
   onGoWrapUp: () => void;
 }) {
-  const { value: comment, onChange: handleComment } = useDebouncedField(team.presentationComment ?? "", (next) =>
+  const { value: comment, onChange: handleComment, saved: commentSaved, error: commentError } = useDebouncedField(team.presentationComment ?? "", (next) =>
     updateTeam(code, teamId, (t) => (t.presentationComment = next)),
   );
 
   const role = roleById(team.roleId);
-  const seenEvents = EVENT_CARDS.filter((e) => team.eventCardIds?.includes(e.id));
+  const seenEvents = useTeamEventCards(code, teamId, team, Boolean(team.eventCardIds?.length));
   const orientation1 = team.design1 ? computeOrientation(team.design1) : undefined;
   const stability = role && orientation1 ? computeStability(orientation1, role.tier) : undefined;
   const gap = orientation1 ? computeGap(orientation1) : undefined;
@@ -358,6 +342,7 @@ export function PresentationScreen({
           className="w-full resize-none rounded-lg border border-line bg-surface-0 p-2 text-[12.5px] text-ink outline-none focus:border-brand"
           placeholder="발표에서 강조하고 싶은 한 줄"
         />
+        <p className="mt-2 text-right text-[11px] text-ink-dim">{commentError ? "저장 실패 · 입력하면 다시 시도합니다" : commentSaved ? "저장됨" : "저장 중…"}</p>
       </Card>
       <div className="flex justify-end gap-2">
         <PrimaryButton onClick={onGoWrapUp}>성찰 기록하러 가기</PrimaryButton>
@@ -421,7 +406,7 @@ function WrapUpScreen({
   team: Team;
   onBack: () => void;
 }) {
-  const { value: reflectionValue, onChange: handleReflection } = useDebouncedField(team.reflection ?? "", (next) =>
+  const { value: reflectionValue, onChange: handleReflection, saved: reflectionSaved, error: reflectionError } = useDebouncedField(team.reflection ?? "", (next) =>
     updateTeam(code, teamId, (t) => (t.reflection = next)),
   );
   const role = roleById(team.roleId);
@@ -472,6 +457,7 @@ function WrapUpScreen({
             placeholder="예: 처음엔 성장이 먼저라고 생각했는데, 형편이 어려운 역할이 되어보니..."
             className="w-full resize-none rounded-lg border border-line bg-surface-0 p-3 text-[13px] text-ink outline-none focus:border-brand"
           />
+          <p className="mt-2 text-right text-[11px] text-ink-dim">{reflectionError ? "저장 실패 · 입력하면 다시 시도합니다" : reflectionSaved ? "저장됨" : "저장 중…"}</p>
         </Card>
         <p className="text-center text-[11px] text-ink-faint">이 기록은 평가 대상이 아니라 자유로운 성찰입니다.</p>
       </div>
