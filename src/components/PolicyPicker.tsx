@@ -1,6 +1,7 @@
 import { POLICY_CATEGORIES, optionLabel } from "../data/policies";
 import type { PolicyChoice, PolicyCategoryId } from "../types";
 import { Card, PrimaryButton } from "./ui";
+import { useTeamActions } from "./teamActionsContext";
 
 export function PolicyPicker({
   value,
@@ -15,6 +16,8 @@ export function PolicyPicker({
   submitLabel: string;
   previousChoice?: PolicyChoice;
 }) {
+  const { previewViewport } = useTeamActions();
+  const desktopPreview = previewViewport === "desktop";
   const complete = Boolean(value.tax && value.budget && value.wage && value.reason?.trim());
   const isSubmitted = Boolean(value.submittedAt);
 
@@ -58,8 +61,8 @@ export function PolicyPicker({
                     selected ? "border-brand bg-brand-dim" : "border-line bg-surface-1 hover:border-line-strong"
                   }`}
                 >
-                  <span className="text-[12px] font-semibold text-ink">{option.label}</span>
-                  <span className="text-[10.5px] text-ink-dim">{option.description}</span>
+                  <span className={`${desktopPreview ? "text-sm" : "text-[12px]"} font-semibold text-ink`}>{option.label}</span>
+                  <span className={`${desktopPreview ? "text-[13px]" : "text-[10.5px]"} text-ink-dim`}>{option.description}</span>
                 </button>
               );
             })}
@@ -73,7 +76,7 @@ export function PolicyPicker({
           onChange={(e) => onChange({ ...value, reason: e.target.value, submittedAt: null })}
           placeholder="왜 이 조합을 골랐나요?"
           rows={2}
-          className="w-full resize-none rounded-lg border border-line bg-surface-0 p-2 text-[12.5px] text-ink outline-none focus:border-brand"
+          className={`w-full resize-none rounded-lg border border-line bg-surface-0 p-2 ${desktopPreview ? "text-sm" : "text-[12.5px]"} text-ink outline-none focus:border-brand`}
         />
       </Card>
 

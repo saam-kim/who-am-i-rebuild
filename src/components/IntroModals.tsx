@@ -12,6 +12,7 @@ function ModalShell({
   ctaLabel,
   onClose,
   children,
+  embedded = false,
 }: {
   eyebrow: string;
   icon: string;
@@ -19,10 +20,11 @@ function ModalShell({
   ctaLabel: string;
   onClose: () => void;
   children: ReactNode;
+  embedded?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+    <div className={`${embedded ? "absolute" : "fixed"} inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm`}>
+      <div className="relative max-h-full w-full max-w-md overflow-y-auto rounded-3xl bg-white shadow-2xl">
         <div className="flex items-center gap-3 bg-linear-to-br from-brand to-brand-ink px-5 py-4 text-white">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-xl">{icon}</div>
           <div className="min-w-0">
@@ -52,9 +54,9 @@ const WHY_REASONS = [
   "정답을 맞히는 활동이 아니에요. 왜 그렇게 생각했는지 서로 설명할 수 있으면 충분합니다.",
 ];
 
-function WhyModal({ onClose }: { onClose: () => void }) {
+function WhyModal({ onClose, embedded }: { onClose: () => void; embedded?: boolean }) {
   return (
-    <ModalShell eyebrow="무지의 베일" icon="⚖️" title="이 활동은 왜 하는 걸까요?" ctaLabel="다음" onClose={onClose}>
+    <ModalShell eyebrow="무지의 베일" icon="⚖️" title="이 활동은 왜 하는 걸까요?" ctaLabel="다음" onClose={onClose} embedded={embedded}>
       {WHY_REASONS.map((reason, i) => (
         <div key={reason} className="flex gap-2.5">
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-dim text-[11px] font-black text-brand-ink">
@@ -78,9 +80,9 @@ const TODAY_STEPS: { icon: string; color: StepColor; title: string; desc: string
   { icon: "📣", color: "crit", title: "발표", desc: "우리 팀의 여정을 카드로 정리해 나눕니다." },
 ];
 
-function TodayModal({ onClose }: { onClose: () => void }) {
+function TodayModal({ onClose, embedded }: { onClose: () => void; embedded?: boolean }) {
   return (
-    <ModalShell eyebrow="5단계로 진행돼요" icon="🧭" title="오늘의 흐름" ctaLabel="시작하기" onClose={onClose}>
+    <ModalShell eyebrow="5단계로 진행돼요" icon="🧭" title="오늘의 흐름" ctaLabel="시작하기" onClose={onClose} embedded={embedded}>
       {TODAY_STEPS.map((step) => (
         <div key={step.title} className="flex gap-3 rounded-2xl border border-line bg-surface-0 p-3">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${STEP_BG[step.color]}`}>{step.icon}</div>
@@ -100,17 +102,18 @@ function introSeenKey(code: string, teamId: string) {
   return `wai-intro-seen:${code}:${teamId}`;
 }
 
-export function IntroFlow({ code, teamId }: { code: string; teamId: string }) {
+export function IntroFlow({ code, teamId, embedded = false, persist = true }: { code: string; teamId: string; embedded?: boolean; persist?: boolean }) {
   const [phase, setPhase] = useState<"why" | "today" | "done">(() =>
-    safeLocalStorage.getItem(introSeenKey(code, teamId)) ? "done" : "why",
+    persist && safeLocalStorage.getItem(introSeenKey(code, teamId)) ? "done" : "why",
   );
 
-  if (phase === "why") return <WhyModal onClose={() => setPhase("today")} />;
+  if (phase === "why") return <WhyModal onClose={() => setPhase("today")} embedded={embedded} />;
   if (phase === "today")
     return (
       <TodayModal
+        embedded={embedded}
         onClose={() => {
-          safeLocalStorage.setItem(introSeenKey(code, teamId), "1");
+          if (persist) safeLocalStorage.setItem(introSeenKey(code, teamId), "1");
           setPhase("done");
         }}
       />
