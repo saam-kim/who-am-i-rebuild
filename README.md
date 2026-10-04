@@ -73,6 +73,8 @@ Firebase Realtime Database로 **서로 다른 기기 간에도 실시간 동기�
 
 Vercel에서 Vite 프로젝트로 연결하고 빌드 명령을 `npm run build`, 출력 디렉터리를 `dist`로 설정합니다. `.env.example`의 `VITE_FIREBASE_*` 값을 Vercel 환경 변수에도 등록합니다. `vercel.json`은 React Router 경로의 새로고침을 처리하고 보안 헤더를 설정합니다. 하위 경로로 배포하려면 `vite.config.ts`의 `base`도 조정해야 합니다.
 
+환경 변수는 **Production과 Preview에 각각 적용**해야 합니다. Production에만 등록하면 PR 미리보기에서는 수업 기능을 사용할 수 없습니다. 필수 연결 설정(API key·프로젝트 ID·DB URL)이 없는 환경에는 설정 안내와 운영 주소 링크를 표시합니다. 환경 변수를 바꾼 뒤에는 다시 빌드·배포해야 반영됩니다.
+
 Firebase 규칙은 `database.rules.json`으로 관리합니다. 규칙 배포는 앱 배포와 별개이며, Firebase CLI로 프로젝트를 확인한 뒤 `firebase deploy --only database`를 실행합니다. 현재는 로그인 없는 교실 활동용으로 세션과 접속 정보의 읽기·쓰기를 허용합니다. 참여 코드는 접근 권한을 보장하는 비밀번호가 아니므로 학생 실명 등 개인정보를 입력하지 않는 방식으로 운영합니다.
 
 ## 코드 구조

@@ -8,10 +8,10 @@ import '@fontsource/outfit/500.css'
 import '@fontsource/outfit/700.css'
 import '@fontsource/outfit/800.css'
 import './index.css'
-import App from './App.tsx'
+import StartupApp from './StartupApp'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <StartupApp />
   </StrictMode>,
 )

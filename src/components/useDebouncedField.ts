@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// onBlur만으로 저장하면, 학생이 입력을 마지막 행동으로 남기고 다른 곳을
-// 탭하지 않은 채 끝나버릴 때(수업 종료, 탭 종료 등) 저장이 아예 안 되는
-// 위험이 있다. 타이핑 중 주기적으로 저장해 그 위험을 없앤다.
+// 입력이 잠시 멈추면 저장한다. blur를 기다리지 않으며, 화면 이동 시에도
+// 대기 중인 입력을 저장한다. 브라우저 종료·네트워크 단절은 별도 보장이 없다.
 export function useDebouncedField(initial: string, save: (value: string) => void | Promise<void>, delay = 500) {
   const [value, setValue] = useState(initial);
   const [saved, setSaved] = useState(true);
