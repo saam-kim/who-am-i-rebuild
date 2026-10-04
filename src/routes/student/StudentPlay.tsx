@@ -268,7 +268,7 @@ export function SecondRoundScreen({
   return (
     <Screen stage={4} stageStartedAt={session.stageStartedAt} cta="뉴스를 보고 정책 다시 설계하기" teamName={team.name}>
       <Card label="사건 · 뉴스 카드">
-        <p className="mb-2 text-[12px] text-ink-dim">우리 팀의 1차 정책을 바탕으로 만든 가상 뉴스입니다. 이런 상황이 생긴다면 누구에게 어떤 영향을 줄까요?</p>
+        <p className="mb-3 break-keep text-sm leading-relaxed text-ink-dim">우리 팀의 1차 정책을 바탕으로 만든 가상 뉴스입니다. 이런 상황이 생긴다면 누구에게 어떤 영향을 줄까요?</p>
         {!cards.length && <p className="text-[12px] text-warn">1차 설계에서 세금·예산·최저임금을 모두 선택해야 관련 뉴스가 표시됩니다.</p>}
         <EventCardsView cards={cards} />
       </Card>
