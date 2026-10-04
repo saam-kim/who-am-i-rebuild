@@ -7,7 +7,6 @@ import {
   SecondRoundScreen,
 } from "../student/StudentPlay";
 import { pickEventCards } from "../../data/events";
-import { computeOrientation } from "../../data/logic";
 import { pickWeightedRole } from "../../data/roles";
 import type { SessionState, Team } from "../../types";
 
@@ -15,7 +14,7 @@ import type { SessionState, Team } from "../../types";
 // 재사용해서, 학생 화면이 바뀌면 미리보기도 자동으로 같이 바뀌게 한다 —
 // 예전엔 여기 따로 목업을 만들어뒀다가 실제 화면과 조용히 어긋난 적이 있었다.
 // code/teamId는 실제 세션에 존재하지 않는 값이라 여기서 발생하는 저장 시도는
-// 조용히 무시된다(스토어가 없는 세션 코드에 대한 쓰기는 no-op).
+// 조용히 무시된다(스토어가 미리보기 코드의 쓰기를 차단한다).
 
 const PREVIEW_CODE = "__preview__";
 const PREVIEW_TEAM_ID = "preview-team";
@@ -33,7 +32,7 @@ export function PreviewModal({ session, onClose }: { session: SessionState; onCl
       design2,
       roleId: pickWeightedRole().id,
       roleRevealedAt: Date.now(),
-      eventCardIds: pickEventCards(computeOrientation(design1)).map((c) => c.id),
+      eventCardIds: pickEventCards(design1).map((c) => c.id),
       presentationComment: "우리는 성장과 안전망 사이에서 균형을 찾으려 했습니다.",
     };
   });

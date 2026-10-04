@@ -106,17 +106,21 @@ export async function sessionExists(code: string): Promise<boolean> {
 // 주의: 이 브라우저 탭이 해당 경로를 한 번도 구독한 적이 없으면(예: 방금
 // /join에서 넘어온 학생 탭) 로컬 캐시가 비어 있어서 콜백의 첫 호출은 무조건
 // current===null로 들어온다 — 이건 "세션이 없다"는 뜻이 아니라 "아직 서버
-// 값을 확인 못 했다"는 뜻이다. 여기서 undefined를 반환해 중단해버리면 SDK가
-// 서버의 진짜 값과 대조해 재시도할 기회 자체를 뺏는다(실제로 이렇게 팀 참여가
-// 통째로 사라지는 버그였다). 그래서 null이어도 항상 mutator를 실행해서 낙관적
-// 쓰기를 시도하고, 서버에 진짜 값이 있으면 SDK가 알아서 그 값으로 재시도한다.
+// 값을 확인 못 했다"는 뜻이다. undefined로 중단하지 않고 null을 반환하면
+// 서버 값과 대조해 재시도한다. 빈 가짜 문서에 mutator를 실행하지 않는다.
 export async function updateSession(code: string, mutator: (draft: SessionState) => void) {
-  await runTransaction(sessionRef(code), (current: SessionState | null) => {
-    const draft = normalizeSession(current ?? ({} as SessionState));
+  // 교사의 학생 화면 미리보기는 실제 DB에 문서를 만들거나 쓰지 않는다.
+  if (code === "__preview__") return;
+  const result = await runTransaction(sessionRef(code), (current: SessionState | null) => {
+    if (current === null) return null;
+    const draft = normalizeSession(current);
     mutator(draft);
     draft.updatedAt = Date.now();
     return draft;
-  });
+  }, { applyLocally: false });
+  if (!result.committed || !result.snapshot.exists()) {
+    throw new Error("세션을 찾을 수 없거나 저장하지 못했습니다.");
+  }
 }
 
 export async function setStage(code: string, stage: Stage) {
@@ -239,7 +243,8 @@ export function isTeamConnected(code: string, teamId: string): boolean {
 export async function updateTeam(code: string, teamId: string, mutator: (team: Team) => void) {
   await updateSession(code, (s) => {
     const team = s.teams[teamId];
-    if (team) mutator(team);
+    if (!team) throw new Error("저장할 팀을 찾을 수 없습니다.");
+    mutator(team);
   });
 }
 

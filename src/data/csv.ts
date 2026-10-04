@@ -1,6 +1,7 @@
 import type { SessionState } from "../types";
 import { optionLabel } from "./policies";
 import { roleById } from "./roles";
+import { resolveEventCards } from "./events";
 import { computeGap, computeOrientation, computeStability, GAP_LABEL, ORIENTATION_LABEL, STABILITY_LABEL, TIER_LABEL } from "./logic";
 
 function csvCell(value: string | number | undefined): string {
@@ -56,7 +57,7 @@ export function buildSessionCsv(session: SessionState): string {
         orientation2 ? ORIENTATION_LABEL[orientation2] : "",
         stability ? STABILITY_LABEL[stability] : "",
         gap ? GAP_LABEL[computeGap(gap)] : "",
-        (team.eventCardIds ?? []).join(" / "),
+        team.eventCardIds?.length ? resolveEventCards(team.design1, team.eventCardIds).map((card) => card.headline).join(" / ") : "",
         team.presentationComment ?? "",
         team.reflection ?? "",
       ]
