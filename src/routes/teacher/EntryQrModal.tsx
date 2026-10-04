@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { GhostButton, PrimaryButton } from "../../components/ui";
 
-export function EntryQrModal({ code, className, onClose }: { code: string; className: string; onClose: () => void }) {
+export function EntryQrModal({ code, onClose }: { code: string; onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [copyStatus, setCopyStatus] = useState("");
   const joinUrl = new URL("join", new URL(import.meta.env.BASE_URL, window.location.origin)).href;
@@ -58,7 +58,6 @@ export function EntryQrModal({ code, className, onClose }: { code: string; class
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="mb-1 text-sm text-ink-dim">{className}</p>
             <h2 id="entry-qr-title" className="font-display text-2xl font-bold text-ink sm:text-3xl">학생 입장 QR</h2>
           </div>
           <GhostButton onClick={onClose}>닫기</GhostButton>

@@ -10,7 +10,7 @@ import { resolveEventCards } from "../src/data/events";
 import type { SessionState, Team } from "../src/types";
 
 const session: SessionState = {
-  code: "1234", className: "테스트", stage: 4, stageStartedAt: null,
+  code: "1234", stage: 4, stageStartedAt: null,
   stageHistory: [], teams: {}, expectedTeamCount: 5, createdAt: 1, updatedAt: 1,
 };
 const makeTeam = (): Team => ({

@@ -7,7 +7,6 @@ import { safeLocalStorage } from "../../utils/storage";
 const LAST_CODE_KEY = "wai-teacher-last-code";
 
 export function TeacherHome() {
-  const [className, setClassName] = useState("");
   const [studentCount, setStudentCount] = useState(24);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +25,7 @@ export function TeacherHome() {
     setError(null);
     setCreating(true);
     try {
-      const code = await createSession(className.trim() || "무지의 베일 수업", studentCount);
+      const code = await createSession(studentCount);
       safeLocalStorage.setItem(LAST_CODE_KEY, code);
       navigate(`/teacher/${code}`);
     } catch (err) {
@@ -47,16 +46,6 @@ export function TeacherHome() {
 
         <form onSubmit={handleCreate} className="mt-5">
           <label className="block">
-            <span className="font-mono-label text-[10px] uppercase text-ink-faint">수업명</span>
-            <input
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-              placeholder="예: 2학년 3반 사회"
-              className="mt-1 w-full rounded-[10px] border border-line bg-surface-0 px-3 py-3 text-[14px] text-ink outline-none focus:border-brand"
-            />
-          </label>
-
-          <label className="mt-4 block">
             <span className="font-mono-label text-[10px] uppercase text-ink-faint">참여 학생 수</span>
             <input
               value={studentCount}

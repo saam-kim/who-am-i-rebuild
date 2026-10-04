@@ -77,7 +77,7 @@ describe("기존 세션과 내보내기", () => {
 
   it("CSV의 뉴스도 화면과 같은 교체 규칙으로 제목을 내보낸다", () => {
     const session: SessionState = {
-      code: "1234", className: "테스트", stage: 5, stageStartedAt: 1,
+      code: "1234", stage: 5, stageStartedAt: 1,
       stageHistory: [], expectedTeamCount: 5, createdAt: 1, updatedAt: 1,
       teams: { t1: { id: "t1", name: "팀", joinedAt: 1, design1: choice, eventCardIds: ["sec-3"] } },
     };

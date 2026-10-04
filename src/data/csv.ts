@@ -74,7 +74,7 @@ export function downloadSessionCsv(session: SessionState) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `who-am-i_${session.className || session.code}_${session.code}.csv`;
+  a.download = `who-am-i_${session.code}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();

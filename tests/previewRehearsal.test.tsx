@@ -9,7 +9,7 @@ import { PreviewModal } from "../src/routes/teacher/PreviewModal";
 import type { SessionState } from "../src/types";
 
 const session: SessionState = {
-  code: "1234", className: "실제 수업", stage: 1, stageStartedAt: 1,
+  code: "1234", stage: 1, stageStartedAt: 1,
   stageHistory: [], expectedTeamCount: 5, createdAt: 1, updatedAt: 1,
   teams: { real: { id: "real", name: "실제 팀", joinedAt: 1, stage1Response: "실제 응답" } },
 };
