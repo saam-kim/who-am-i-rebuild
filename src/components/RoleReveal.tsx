@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ROLE_CARDS, roleById, REFLECTION_PROMPT } from "../data/roles";
 import { computeGap, computeOrientation, computeStability, GAP_DESC, GAP_LABEL, STABILITY_DESC, STABILITY_LABEL } from "../data/logic";
-import { POLICY_CATEGORIES, optionLabel } from "../data/policies";
-import type { PolicyChoice } from "../types";
-import { Card, PrimaryButton } from "./ui";
+import { POLICY_CATEGORIES } from "../data/policies";
+import type { PolicyCategoryId, PolicyChoice } from "../types";
+import { Card, GhostButton, PrimaryButton } from "./ui";
 
 // 6개 역할 = 6개 조각. 실제 당첨은 pickWeightedRole()의 가중치 무작위이고
 // 화면의 룰렛은 연출용이라 물리적으로 정확히 그 조각에 "멈추는" 건 아니지만,
@@ -98,16 +98,7 @@ export function RoleReveal({
             </Card>
             {design1 && (
               <Card label="우리 팀의 1차 설계 · 이 결과의 원인">
-                <div className="flex flex-wrap gap-1.5">
-                  {POLICY_CATEGORIES.map((c) => (
-                    <span
-                      key={c.id}
-                      className="font-mono-label rounded-full border border-line bg-surface-2 px-2.5 py-1 text-[10.5px] text-ink-dim"
-                    >
-                      {optionLabel(c.id, design1[c.id])}
-                    </span>
-                  ))}
-                </div>
+                <SelectedPolicyDescriptions choice={design1} />
               </Card>
             )}
             {stability && gap && (
@@ -154,6 +145,60 @@ export function RoleReveal({
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+function SelectedPolicyDescriptions({ choice }: { choice: PolicyChoice }) {
+  const [openCategory, setOpenCategory] = useState<PolicyCategoryId | null>(null);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const descriptionId = useId();
+  const category = POLICY_CATEGORIES.find((item) => item.id === openCategory);
+  const option = category?.options.find((item) => item.id === choice[category.id]);
+
+  function closeDescription() {
+    openButtonRef.current?.focus();
+    setOpenCategory(null);
+  }
+
+  return (
+    <div onKeyDown={(event) => {
+      if (event.key === "Escape" && openCategory) {
+        event.stopPropagation();
+        closeDescription();
+      }
+    }}>
+      <div className="flex flex-wrap gap-1.5">
+        {POLICY_CATEGORIES.map((item) => {
+          const selected = item.options.find((policy) => policy.id === choice[item.id]);
+          const expanded = Boolean(selected && item.id === openCategory);
+          return (
+            <button
+              key={item.id}
+              ref={expanded ? openButtonRef : undefined}
+              type="button"
+              disabled={!selected}
+              aria-expanded={expanded}
+              aria-controls={expanded ? descriptionId : undefined}
+              onClick={() => setOpenCategory(expanded ? null : item.id)}
+              className={`font-mono-label inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10.5px] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50 ${expanded ? "border-brand bg-brand-dim text-brand-ink" : "border-line bg-surface-2 text-ink-dim hover:border-brand"}`}
+            >
+              {selected?.label ?? "미선택"}
+              {selected && <span aria-hidden="true">ⓘ</span>}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[11px] text-ink-faint">정책 이름을 누르면 설명을 볼 수 있어요.</p>
+      {category && option && (
+        <section id={descriptionId} aria-labelledby={`${descriptionId}-title`} className="mt-3 rounded-xl border border-brand/20 bg-brand-dim p-3">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <h3 id={`${descriptionId}-title`} className="break-keep text-[12px] font-bold text-brand-ink">{category.title} · {option.label}</h3>
+            <GhostButton onClick={closeDescription}>닫기</GhostButton>
+          </div>
+          <p className="break-keep text-[13px] leading-relaxed text-ink-dim">{option.description}</p>
+        </section>
+      )}
     </div>
   );
 }
