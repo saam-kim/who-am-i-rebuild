@@ -75,14 +75,13 @@ function randomPin(): string {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
-export async function createSession(className: string, studentCount: number): Promise<string> {
+export async function createSession(studentCount: number): Promise<string> {
   let code = randomPin();
   while (await sessionExists(code)) code = randomPin();
   const teamCount = Math.min(20, Math.max(5, Math.round(studentCount / 2)));
   const now = Date.now();
   const state: SessionState = {
     code,
-    className,
     stage: 1,
     stageStartedAt: now,
     stageHistory: [],

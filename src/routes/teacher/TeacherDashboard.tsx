@@ -74,7 +74,7 @@ export function TeacherDashboard() {
         </div>
       </div>
 
-      {qrOpen && <EntryQrModal key={code} code={code} className={session.className} onClose={closeQr} />}
+      {qrOpen && <EntryQrModal key={code} code={code} onClose={closeQr} />}
       {previewOpen && <PreviewModal session={session} onClose={() => setPreviewOpen(false)} />}
       {selectedTeam && <TeamDetailModal team={selectedTeam} onClose={() => setSelectedTeam(null)} />}
     </div>
@@ -106,7 +106,6 @@ function ShellTop({
               {code}
             </span>
           </div>
-          <p className="truncate text-sm font-semibold text-ink" title={session.className}>{session.className}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0">
           <GhostButton tone="brand" onClick={onOpenQr}>QR 코드</GhostButton>

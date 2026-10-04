@@ -43,7 +43,6 @@ export interface Team {
 
 export interface SessionState {
   code: string;
-  className: string;
   stage: Stage;
   stageStartedAt: number | null;
   stageHistory: Stage[];
