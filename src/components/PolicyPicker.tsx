@@ -62,7 +62,7 @@ export function PolicyPicker({
                   }`}
                 >
                   <span className={`${desktopPreview ? "text-sm" : "text-[12px]"} font-semibold text-ink`}>{option.label}</span>
-                  <span className={`${desktopPreview ? "text-[13px]" : "text-[10.5px]"} text-ink-dim`}>{option.description}</span>
+                  <span className={`${desktopPreview ? "text-[13px]" : "text-[10.5px]"} break-keep leading-relaxed text-ink-dim`}>{option.description}</span>
                 </button>
               );
             })}

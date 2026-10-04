@@ -20,7 +20,7 @@ export const POLICY_CATEGORIES: PolicyCategory[] = [
     title: "세금 정책",
     options: [
       { id: "low", label: "낮은 세금형", description: "세금을 적게 걷고 개인이 알아서 쓰게 합니다.", tilt: 1 },
-      { id: "shared", label: "공동 부담형", description: "소득에 비슷한 비율의 세금을 적용합니다.", tilt: 2 },
+      { id: "shared", label: "공동 부담형", description: "소득이 얼마든 같은 비율로 세금을 냅니다. 예: 세율이 10%라면 소득 100만 원은 10만 원, 300만 원은 30만 원을 냅니다.", tilt: 2 },
       { id: "ability", label: "능력 부담형", description: "소득이 높을수록 더 높은 비율로 세금을 부담합니다.", tilt: 3 },
     ],
   },
@@ -30,7 +30,7 @@ export const POLICY_CATEGORIES: PolicyCategory[] = [
     options: [
       { id: "growth", label: "성장 우선형", description: "경제 성장과 산업 투자에 예산을 집중합니다.", tilt: 1 },
       { id: "opportunity", label: "기회 투자형", description: "교육과 재도전 기회에 예산을 투자합니다.", tilt: 2 },
-      { id: "basic", label: "기본 보장형", description: "모두에게 기본적인 생활 안전망을 제공합니다.", tilt: 3 },
+      { id: "basic", label: "기본 보장형", description: "실직하거나 아파서 생활이 어려운 사람에게 식비·치료비·주거비를 지원하는 데 국가 예산을 우선 씁니다.", tilt: 3 },
     ],
   },
   {
@@ -39,7 +39,7 @@ export const POLICY_CATEGORIES: PolicyCategory[] = [
     options: [
       { id: "market", label: "시장 자율형", description: "정부 개입 없이 시장이 임금을 정하게 합니다.", tilt: 1 },
       { id: "gradual", label: "점진 인상형", description: "물가와 경기를 보며 조금씩 올립니다.", tilt: 2 },
-      { id: "living", label: "생활 보장형", description: "실제 생활이 가능한 수준까지 올립니다.", tilt: 3 },
+      { id: "living", label: "생활 보장형", description: "하루 8시간씩 주 5일 일한 사람이 식비·주거비·교통비 등 기본 생활비를 마련할 수 있도록 최저임금을 올립니다.", tilt: 3 },
     ],
   },
 ];
