@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   adjustStageTime,
@@ -20,6 +20,7 @@ import { computeOrientation, ORIENTATION_LABEL, ORIENTATION_RANK } from "../../d
 import { downloadSessionCsv } from "../../data/csv";
 import { STAGE_META, type SessionState, type Stage, type Team } from "../../types";
 import { PreviewModal } from "./PreviewModal";
+import { EntryQrModal } from "./EntryQrModal";
 
 export function TeacherDashboard() {
   const { code = "" } = useParams();
@@ -27,6 +28,9 @@ export function TeacherDashboard() {
   const session = useSession(code);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [dismissedQrCode, setDismissedQrCode] = useState<string | null>(null);
+  const closeQr = useCallback(() => setDismissedQrCode(code), [code]);
+  const qrOpen = dismissedQrCode !== code;
 
   if (session === undefined) {
     return (
@@ -48,11 +52,12 @@ export function TeacherDashboard() {
 
   return (
     <div className="min-h-screen p-4">
-      <div className="glass-card mx-auto max-w-6xl overflow-hidden rounded-[14px]">
+      <div inert={qrOpen} className="glass-card mx-auto max-w-6xl overflow-hidden rounded-[14px]">
         <ShellTop
           code={code}
           session={session}
           onOpenPreview={() => setPreviewOpen(true)}
+          onOpenQr={() => setDismissedQrCode(null)}
           onExportCsv={() => downloadSessionCsv(session)}
         />
         <div className="flex flex-col md:flex-row">
@@ -69,6 +74,7 @@ export function TeacherDashboard() {
         </div>
       </div>
 
+      {qrOpen && <EntryQrModal key={code} code={code} className={session.className} onClose={closeQr} />}
       {previewOpen && <PreviewModal session={session} onClose={() => setPreviewOpen(false)} />}
       {selectedTeam && <TeamDetailModal team={selectedTeam} onClose={() => setSelectedTeam(null)} />}
     </div>
@@ -79,11 +85,13 @@ function ShellTop({
   code,
   session,
   onOpenPreview,
+  onOpenQr,
   onExportCsv,
 }: {
   code: string;
   session: SessionState;
   onOpenPreview: () => void;
+  onOpenQr: () => void;
   onExportCsv: () => void;
 }) {
   const remaining = useCountdown(session.stageStartedAt, STAGE_META[session.stage].durationSec);
@@ -136,6 +144,7 @@ function ShellTop({
       <GhostButton tone="brand" onClick={() => setStage(code, (session.stage + 1) as Stage)} disabled={session.stage === 5}>
         다음 단계로 ▸
       </GhostButton>
+      <GhostButton tone="brand" onClick={onOpenQr}>QR 코드</GhostButton>
       <GhostButton tone="brand" onClick={onOpenPreview}>
         학생 화면 미리보기
       </GhostButton>
