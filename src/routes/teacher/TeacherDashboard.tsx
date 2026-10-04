@@ -97,58 +97,68 @@ function ShellTop({
   const remaining = useCountdown(session.stageStartedAt, STAGE_META[session.stage].durationSec);
   const timeLow = remaining <= 60;
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface-1 px-4 py-3">
-      <div className="flex flex-col items-start gap-0.5">
-        <span className="font-mono-label text-[8.5px] uppercase text-ink-faint">참여 코드</span>
-        <span className="font-display pulse-glow rounded-lg border-2 border-brand/15 bg-brand-dim px-3 py-0.5 text-lg font-extrabold tracking-[0.08em] text-brand-ink">
-          {code}
-        </span>
+    <div className="flex flex-col gap-3 border-b border-line bg-surface-1 px-4 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="font-mono-label text-[10px] text-ink-faint">참여 코드</span>
+            <span className="font-display pulse-glow rounded-lg border-2 border-brand/15 bg-brand-dim px-3 py-1 text-lg font-extrabold leading-none tracking-[0.08em] text-brand-ink">
+              {code}
+            </span>
+          </div>
+          <p className="truncate text-sm font-semibold text-ink" title={session.className}>{session.className}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0">
+          <GhostButton tone="brand" onClick={onOpenQr}>QR 코드</GhostButton>
+          <GhostButton tone="brand" onClick={onOpenPreview}>학생 화면 미리보기</GhostButton>
+          <GhostButton onClick={onExportCsv}>CSV 다운로드</GhostButton>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {([1, 2, 3, 4, 5] as Stage[]).map((stage) => (
-          <button
-            key={stage}
-            onClick={() => setStage(code, stage)}
-            className={`font-mono-label rounded-full border px-2.5 py-1 text-[10.5px] transition-all duration-200 ${
-              session.stage === stage
-                ? "border-brand bg-linear-to-br from-brand to-brand-ink text-white font-bold shadow-[0_4px_10px_rgba(37,99,235,0.25)]"
-                : "border-line text-ink-dim hover:-translate-y-0.5 hover:border-brand"
-            }`}
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+        <nav aria-label="수업 단계" className="grid min-w-0 flex-1 grid-cols-2 gap-1.5 sm:grid-cols-5">
+          {([1, 2, 3, 4, 5] as Stage[]).map((stage) => (
+            <button
+              key={stage}
+              aria-current={session.stage === stage ? "step" : undefined}
+              onClick={() => setStage(code, stage)}
+              className={`font-mono-label min-h-8 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10.5px] transition-all duration-200 ${
+                session.stage === stage
+                  ? "border-brand bg-linear-to-br from-brand to-brand-ink text-white font-bold shadow-[0_4px_10px_rgba(37,99,235,0.25)]"
+                  : "border-line text-ink-dim hover:-translate-y-0.5 hover:border-brand"
+              }`}
+            >
+              {stage} {STAGE_META[stage].name}
+            </button>
+          ))}
+        </nav>
+        <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+          <div
+            className={`font-mono-label flex h-8 items-center gap-1 rounded-lg border px-1.5 ${timeLow ? "border-crit/30 bg-crit-bg" : "border-line bg-surface-2"}`}
           >
-            {stage} {STAGE_META[stage].name}
-          </button>
-        ))}
+            <button
+              onClick={() => adjustStageTime(code, -60)}
+              aria-label="1분 줄이기"
+              className="rounded px-1.5 text-[13px] text-ink-dim hover:text-ink"
+            >
+              −
+            </button>
+            <span className={`font-display px-1 text-[13px] font-semibold ${timeLow ? "text-crit" : "text-ink"}`}>{formatClock(remaining)}</span>
+            <button
+              onClick={() => adjustStageTime(code, 60)}
+              aria-label="1분 늘리기"
+              className="rounded px-1.5 text-[13px] text-ink-dim hover:text-ink"
+            >
+              +
+            </button>
+          </div>
+          <GhostButton tone="warn" onClick={() => undoStage(code)} disabled={session.stageHistory.length === 0}>
+            ◂ 단계 되돌리기
+          </GhostButton>
+          <GhostButton tone="brand" onClick={() => setStage(code, (session.stage + 1) as Stage)} disabled={session.stage === 5}>
+            다음 단계로 ▸
+          </GhostButton>
+        </div>
       </div>
-      <div
-        className={`font-mono-label ml-auto flex items-center gap-1 rounded-lg border px-1.5 py-1 ${timeLow ? "border-crit/30 bg-crit-bg" : "border-line bg-surface-2"}`}
-      >
-        <button
-          onClick={() => adjustStageTime(code, -60)}
-          aria-label="1분 줄이기"
-          className="rounded px-1.5 text-[13px] text-ink-dim hover:text-ink"
-        >
-          −
-        </button>
-        <span className={`font-display px-1 text-[13px] font-semibold ${timeLow ? "text-crit" : "text-ink"}`}>{formatClock(remaining)}</span>
-        <button
-          onClick={() => adjustStageTime(code, 60)}
-          aria-label="1분 늘리기"
-          className="rounded px-1.5 text-[13px] text-ink-dim hover:text-ink"
-        >
-          +
-        </button>
-      </div>
-      <GhostButton tone="warn" onClick={() => undoStage(code)} disabled={session.stageHistory.length === 0}>
-        ◂ 단계 되돌리기
-      </GhostButton>
-      <GhostButton tone="brand" onClick={() => setStage(code, (session.stage + 1) as Stage)} disabled={session.stage === 5}>
-        다음 단계로 ▸
-      </GhostButton>
-      <GhostButton tone="brand" onClick={onOpenQr}>QR 코드</GhostButton>
-      <GhostButton tone="brand" onClick={onOpenPreview}>
-        학생 화면 미리보기
-      </GhostButton>
-      <GhostButton onClick={onExportCsv}>CSV 다운로드</GhostButton>
     </div>
   );
 }
