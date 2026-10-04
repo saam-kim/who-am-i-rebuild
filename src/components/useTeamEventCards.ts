@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from "react";
 import { resolveEventCards } from "../data/events";
-import { updateTeam } from "../store/sessionStore";
+import { useTeamActions } from "./teamActionsContext";
 import type { Team } from "../types";
 
 export function useTeamEventCards(code: string, teamId: string, team: Team, enabled = true) {
+  const { updateTeam } = useTeamActions();
   const cards = useMemo(
     () => enabled ? resolveEventCards(team.design1, team.eventCardIds) : [],
     [enabled, team.design1, team.eventCardIds],
@@ -16,7 +17,7 @@ export function useTeamEventCards(code: string, teamId: string, team: Team, enab
       const currentCards = resolveEventCards(draft.design1, draft.eventCardIds);
       if (currentCards.length) draft.eventCardIds = currentCards.map((card) => card.id);
     }).catch((error) => console.error("사건카드 저장 실패:", error));
-  }, [code, teamId, team.eventCardIds, cards]);
+  }, [code, teamId, team.eventCardIds, cards, updateTeam]);
 
   return cards;
 }

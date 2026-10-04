@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getMyTeamId, revealRoleForTeam, touchTeam, updateTeam, useSession } from "../../store/sessionStore";
+import { getMyTeamId, touchTeam, useSession } from "../../store/sessionStore";
+import { useTeamActions } from "../../components/teamActionsContext";
 import { StatusBar } from "../../components/StatusBar";
 import { PolicyPicker } from "../../components/PolicyPicker";
 import { RoleReveal } from "../../components/RoleReveal";
@@ -84,10 +85,11 @@ function Screen({
   teamName: string;
   children: ReactNode;
 }) {
+  const { isPreview, previewViewport } = useTeamActions();
   return (
-    <div className="flex min-h-screen flex-col bg-surface-0">
+    <div className={`flex ${isPreview ? "min-h-full" : "min-h-screen"} flex-col bg-surface-0`}>
       <StatusBar stage={stage} stageStartedAt={stageStartedAt} cta={cta} />
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-3 p-6">
+      <div className={`mx-auto flex w-full ${previewViewport === "desktop" ? "max-w-6xl" : "max-w-5xl"} flex-1 flex-col gap-3 p-6`}>
         <div className="flex items-center justify-between">
           <Chip tone="brand">{teamName}</Chip>
         </div>
@@ -108,13 +110,14 @@ export function LobbyScreen({
   session: SessionState;
   team: Team;
 }) {
+  const { updateTeam, isPreview } = useTeamActions();
   const { value: response, onChange: handleInput, saved, error: saveError } = useDebouncedField(team.stage1Response ?? "", (next) =>
     updateTeam(code, teamId, (t) => (t.stage1Response = next)),
   );
 
   return (
     <Screen stage={1} stageStartedAt={session.stageStartedAt} cta="짝과 이야기하고 한 문장 적기" teamName={team.name}>
-      <IntroFlow code={code} teamId={teamId} />
+      <IntroFlow code={code} teamId={teamId} embedded={isPreview} persist={!isPreview} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         <Card label="무지의 베일이란?" className="lg:h-full">
@@ -180,6 +183,7 @@ export function DesignScreen({
   session: SessionState;
   team: Team;
 }) {
+  const { updateTeam } = useTeamActions();
   // 세션 스토어는 최대 1초 지연으로 반영되기 때문에, 편집 중인 값은
   // 로컬 state를 기준으로 삼고 스토어에는 저장만 fire-and-forget으로 보낸다.
   // (스토어 프롭을 그대로 controlled value로 쓰면 빠른 연속 선택 시 값이 씹힌다.)
@@ -219,6 +223,7 @@ export function RoleRevealScreen({
   session: SessionState;
   team: Team;
 }) {
+  const { revealRoleForTeam } = useTeamActions();
   return (
     <Screen stage={3} stageStartedAt={session.stageStartedAt} cta="진행 중" teamName={team.name}>
       <div className="flex flex-1 items-center py-4">
@@ -245,6 +250,7 @@ export function SecondRoundScreen({
   session: SessionState;
   team: Team;
 }) {
+  const { updateTeam } = useTeamActions();
   const design1 = team.design1;
   const cards = useTeamEventCards(code, teamId, team);
 
@@ -297,6 +303,7 @@ export function PresentationScreen({
   team: Team;
   onGoWrapUp: () => void;
 }) {
+  const { updateTeam } = useTeamActions();
   const { value: comment, onChange: handleComment, saved: commentSaved, error: commentError } = useDebouncedField(team.presentationComment ?? "", (next) =>
     updateTeam(code, teamId, (t) => (t.presentationComment = next)),
   );
@@ -395,7 +402,7 @@ function PolicyStoryCard({ n, design, tone }: { n: string; design?: PolicyChoice
   );
 }
 
-function WrapUpScreen({
+export function WrapUpScreen({
   code,
   teamId,
   team,
@@ -406,6 +413,7 @@ function WrapUpScreen({
   team: Team;
   onBack: () => void;
 }) {
+  const { updateTeam, isPreview } = useTeamActions();
   const { value: reflectionValue, onChange: handleReflection, saved: reflectionSaved, error: reflectionError } = useDebouncedField(team.reflection ?? "", (next) =>
     updateTeam(code, teamId, (t) => (t.reflection = next)),
   );
@@ -414,7 +422,7 @@ function WrapUpScreen({
   const o2 = team.design2 ? computeOrientation(team.design2) : undefined;
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-0">
+    <div className={`flex ${isPreview ? "min-h-full" : "min-h-screen"} flex-col bg-surface-0`}>
       <div className="font-mono-label flex items-center justify-between border-b border-line bg-surface-2 px-4 py-2.5 text-[11px] text-brand-ink">
         <span>수업 마무리</span>
         <button className="text-ink-dim" onClick={onBack}>
