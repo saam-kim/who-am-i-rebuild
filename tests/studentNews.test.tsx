@@ -50,7 +50,7 @@ describe("학생 뉴스 화면", () => {
   it("발표에서도 예전 뉴스가 남지 않는다", async () => {
     const team = makeTeam();
     render(<PresentationScreen code="1234" teamId="t1" team={team} session={{ ...session, stage: 5 }} onGoWrapUp={() => {}} />);
-    const text = screen.getByText(/• 같은 비율/).textContent;
+    const text = screen.getByRole("list", { hidden: true }).textContent;
     expect(text).not.toContain("고소득층 세부담 확대");
     for (const card of resolveEventCards(team.design1)) expect(text).toContain(card.headline);
     await waitFor(() => expect(updateTeam).toHaveBeenCalledTimes(1));
@@ -68,7 +68,8 @@ describe("학생 뉴스 화면", () => {
     const team = makeTeam();
     delete team.eventCardIds;
     render(<PresentationScreen code="1234" teamId="t1" team={team} session={{ ...session, stage: 5 }} onGoWrapUp={() => {}} />);
-    expect(screen.queryByText("5개 확인함")).toBeNull();
+    expect(screen.queryByText("뉴스 5개 확인")).toBeNull();
+    expect(screen.getByText("확인한 뉴스가 없습니다")).toBeTruthy();
     expect(updateTeam).not.toHaveBeenCalled();
   });
 });
