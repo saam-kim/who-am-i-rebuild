@@ -7,6 +7,33 @@ describe("입력 자동 저장", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
+  it("정책 제출은 입력 대기 시간을 건너뛰고 서버 확인 후 완료된다", async () => {
+    let finish!: () => void;
+    const save = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const { result, unmount } = renderHook(() => useDebouncedField({ reason: "" }, save));
+    act(() => result.current.onChange({ reason: "최종 이유" }, true));
+    await act(async () => {});
+    expect(save).toHaveBeenCalledWith({ reason: "최종 이유" });
+    expect(result.current.saved).toBe(false);
+    await act(async () => { finish(); });
+    expect(result.current.saved).toBe(true);
+    unmount();
+  });
+
+  it("느린 연결에서 대기 중인 중간 입력은 생략하고 최신 입력을 저장한다", async () => {
+    let finish!: () => void;
+    const save = vi.fn().mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; })).mockResolvedValue(undefined);
+    const { result, unmount } = renderHook(() => useDebouncedField("", save));
+    act(() => result.current.onChange("첫 입력", true));
+    await act(async () => {});
+    act(() => result.current.onChange("중간 입력", true));
+    act(() => result.current.onChange("최종 입력", true));
+    await act(async () => { finish(); });
+    expect(save.mock.calls.map(([value]) => value)).toEqual(["첫 입력", "최종 입력"]);
+    expect(result.current.saved).toBe(true);
+    unmount();
+  });
+
   it("서버 응답이 오기 전에는 저장됨을 표시하지 않는다", async () => {
     let finish!: () => void;
     const save = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));

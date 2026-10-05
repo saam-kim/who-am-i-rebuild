@@ -26,9 +26,11 @@ class MemoryStorage implements StorageLike {
 
 function createSafeStorage(type: "localStorage" | "sessionStorage"): StorageLike {
   const fallback = new MemoryStorage();
+  const fallbackKeys = new Set<string>();
 
   return {
     getItem(key: string): string | null {
+      if (fallbackKeys.has(key)) return fallback.getItem(key);
       try {
         if (typeof window !== "undefined" && window[type]) {
           return window[type].getItem(key);
@@ -40,27 +42,31 @@ function createSafeStorage(type: "localStorage" | "sessionStorage"): StorageLike
     },
 
     setItem(key: string, value: string): void {
+      fallback.setItem(key, value);
       try {
         if (typeof window !== "undefined" && window[type]) {
           window[type].setItem(key, value);
+          fallbackKeys.delete(key);
           return;
         }
       } catch (err) {
         console.warn(`[storage] ${type}.setItem("${key}") failed, using fallback:`, err);
       }
-      fallback.setItem(key, value);
+      fallbackKeys.add(key);
     },
 
     removeItem(key: string): void {
+      fallback.removeItem(key);
+      fallbackKeys.add(key);
       try {
         if (typeof window !== "undefined" && window[type]) {
           window[type].removeItem(key);
+          fallbackKeys.delete(key);
           return;
         }
       } catch (err) {
         console.warn(`[storage] ${type}.removeItem("${key}") failed, using fallback:`, err);
       }
-      fallback.removeItem(key);
     },
   };
 }

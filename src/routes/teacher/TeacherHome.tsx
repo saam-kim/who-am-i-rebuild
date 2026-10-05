@@ -22,6 +22,10 @@ export function TeacherHome() {
   async function handleCreate(e?: React.FormEvent) {
     if (e) e.preventDefault();
     if (creating) return;
+    if (!Number.isFinite(studentCount) || studentCount <= 0) {
+      setError("참여 학생 수를 1명 이상 입력해 주세요.");
+      return;
+    }
     setError(null);
     setCreating(true);
     try {

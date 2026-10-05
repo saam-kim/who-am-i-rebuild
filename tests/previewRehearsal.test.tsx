@@ -71,7 +71,7 @@ describe("교사 독립 리허설", () => {
     click("최종 제출");
     click("5 발표");
     expect(screen.getByText('"리허설에서 바꾼 근거"')).toBeTruthy();
-    expect(screen.getByText('"2차 근거"')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('"2차 근거"')).toBeTruthy());
     expect(screen.getByText("뉴스 5개 확인")).toBeTruthy();
     click("2 1차 설계");
     expect(screen.getByText(/제출 완료!/)).toBeTruthy();
@@ -104,7 +104,7 @@ describe("교사 독립 리허설", () => {
     expect(screen.getByRole("button", { name: "룰렛 돌리기" })).toBeTruthy();
   });
 
-  it("PC·태블릿 폭과 전체 화면을 전환해도 선택한 정책을 유지한다", () => {
+  it("PC·태블릿 폭과 전체 화면을 전환해도 선택한 정책을 유지한다", async () => {
     render(<PreviewModal session={session} onClose={() => {}} />);
     expect(screen.getByRole("button", { name: "PC 화면" }).getAttribute("aria-pressed")).toBe("true");
     click("2 1차 설계");
@@ -114,7 +114,7 @@ describe("교사 독립 리허설", () => {
     click("전체 화면");
     expect(screen.getByRole("button", { name: "창 크기로" })).toBeTruthy();
     click("4 2차 토론·설계");
-    expect(screen.getByText("세금 부담 줄어, 투자 여력에 기대")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("세금 부담 줄어, 투자 여력에 기대")).toBeTruthy());
     expect(screen.queryByText("같은 비율의 세금, 부담 기준이 명확해져")).toBeNull();
   });
 });

@@ -5,8 +5,10 @@ import { resolveEventCards } from "./events";
 import { computeGap, computeOrientation, computeStability, GAP_LABEL, ORIENTATION_LABEL, STABILITY_LABEL, TIER_LABEL } from "./logic";
 
 function csvCell(value: string | number | undefined): string {
-  const s = String(value ?? "");
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  const raw = String(value ?? "");
+  // 학생 입력을 스프레드시트 수식으로 실행하지 않고 텍스트로 내보낸다.
+  const s = /^[=+@\-\t\r]/.test(raw) ? `'${raw}` : raw;
+  if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 

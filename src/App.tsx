@@ -1,8 +1,10 @@
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { ConnectionNotice } from "./components/ConnectionNotice";
 import { JoinScreen } from "./routes/student/JoinScreen";
 import { StudentPlay } from "./routes/student/StudentPlay";
 import { TeacherHome } from "./routes/teacher/TeacherHome";
-import { TeacherDashboard } from "./routes/teacher/TeacherDashboard";
+const TeacherDashboard = lazy(() => import("./routes/teacher/TeacherDashboard").then((module) => ({ default: module.TeacherDashboard })));
 
 function HomeScreen() {
   return (
@@ -41,6 +43,8 @@ function HomeScreen() {
 export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <ConnectionNotice />
+      <Suspense fallback={<p className="p-6 text-center text-sm text-ink-dim">수업 화면 불러오는 중…</p>}>
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/join" element={<JoinScreen />} />
@@ -48,6 +52,7 @@ export default function App() {
         <Route path="/teacher" element={<TeacherHome />} />
         <Route path="/teacher/:code" element={<TeacherDashboard />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
