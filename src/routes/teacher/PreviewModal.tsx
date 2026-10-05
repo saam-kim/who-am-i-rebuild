@@ -76,7 +76,7 @@ export function PreviewModal({ session, onClose }: { session: SessionState; onCl
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-ink/70 ${fullScreen ? "p-0" : "p-3 sm:p-6"}`} onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label="학생 화면 리허설" className={`flex w-full flex-col gap-3 ${fullScreen ? "h-screen max-w-none p-3 sm:p-4" : "h-[94vh] max-w-6xl"}`} onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-col gap-2 text-white sm:flex-row sm:items-center">
+        <div className="flex shrink-0 flex-col gap-2 rounded-xl bg-ink px-3 py-2 text-white sm:flex-row sm:items-center">
           <span className="font-mono-label min-w-0 text-[13px] sm:flex-1">학생 화면 리허설 · {step === 6 ? "성찰" : `${step} ${STAGE_META[step].name}`}</span>
           <div className="flex shrink-0 gap-2">
             <button onClick={() => setFullScreen((current) => !current)} className="rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-[12px]">{fullScreen ? "창 크기로" : "전체 화면"}</button>
