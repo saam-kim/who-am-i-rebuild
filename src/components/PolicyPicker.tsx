@@ -61,8 +61,8 @@ export function PolicyPicker({
                     selected ? "border-brand bg-brand-dim" : "border-line bg-surface-1 hover:border-line-strong"
                   }`}
                 >
-                  <span className={`${desktopPreview ? "text-sm" : "text-[12px]"} font-semibold text-ink`}>{option.label}</span>
-                  <span className={`${desktopPreview ? "text-[13px]" : "text-[10.5px]"} break-keep leading-relaxed text-ink-dim`}>{option.description}</span>
+                  <span className="text-sm font-semibold text-ink">{option.label}</span>
+                  <span className="break-keep text-[13px] leading-relaxed text-ink-dim">{option.description}</span>
                 </button>
               );
             })}

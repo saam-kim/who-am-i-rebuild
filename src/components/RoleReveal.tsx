@@ -106,12 +106,12 @@ export function RoleReveal({
                 <div className="flex-1 rounded-xl border border-line bg-surface-2 px-4 py-3">
                   <div className="font-mono-label text-[10px] uppercase text-ink-faint">내 삶의 안정도</div>
                   <div className="mt-1 text-base font-bold text-brand-ink">{STABILITY_LABEL[stability]}</div>
-                  <div className="mt-1.5 text-[11.5px] leading-snug text-ink-dim">{STABILITY_DESC[stability]}</div>
+                  <div className="mt-1.5 text-[13px] leading-relaxed text-ink-dim">{STABILITY_DESC[stability]}</div>
                 </div>
                 <div className="flex-1 rounded-xl border border-line bg-surface-2 px-4 py-3">
                   <div className="font-mono-label text-[10px] uppercase text-ink-faint">사회 격차</div>
                   <div className="mt-1 text-base font-bold text-brand-ink">{GAP_LABEL[gap]}</div>
-                  <div className="mt-1.5 text-[11.5px] leading-snug text-ink-dim">{GAP_DESC[gap]}</div>
+                  <div className="mt-1.5 text-[13px] leading-relaxed text-ink-dim">{GAP_DESC[gap]}</div>
                 </div>
               </div>
             )}

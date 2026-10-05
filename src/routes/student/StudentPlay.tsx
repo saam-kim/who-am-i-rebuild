@@ -120,7 +120,7 @@ export function LobbyScreen({
       <IntroFlow code={code} teamId={teamId} embedded={isPreview} persist={!isPreview} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-        <Card label="무지의 베일이란?" className="lg:h-full">
+        <Card label="무지의 베일이란?">
           <span className="text-3xl">🎭</span>
           <p className="mt-3 text-[17px] italic leading-snug text-ink">"당신은 자신이 어떤 계층으로 태어날지 모릅니다."</p>
           <p className="mt-4 text-[14.5px] leading-relaxed text-ink-dim">
@@ -326,7 +326,7 @@ export function PresentationScreen({
             detail={seenEvents.map((e) => `• ${e.headline}`).join("\n")}
             tone="warn"
           />
-          <PolicyStoryCard n="2차 설계" design={team.design2} tone="crit" />
+          <PolicyStoryCard n="2차 설계" design={team.design2} tone="brand" />
         </div>
         {stability && gap && (
           <div className="mt-3 flex gap-3 border-t border-line pt-3">
@@ -377,7 +377,7 @@ function StoryCard({ n, title, detail, tone }: { n: string; title: string; detai
     <div className={`flex flex-col gap-2 rounded-xl border border-line ${STORY_BORDER[tone]} border-t-[3px] bg-surface-1 p-3.5`}>
       <span className={`font-mono-label text-[10px] ${STORY_LABEL[tone]}`}>{n}</span>
       <span className="text-[13px] font-semibold leading-snug text-ink">{title}</span>
-      {detail && <p className="whitespace-pre-line text-[11.5px] leading-relaxed text-ink-dim">{detail}</p>}
+      {detail && <p className="whitespace-pre-line text-[13px] leading-relaxed text-ink-dim">{detail}</p>}
     </div>
   );
 }
@@ -393,7 +393,7 @@ function PolicyStoryCard({ n, design, tone }: { n: string; design?: PolicyChoice
             <span>{optionLabel("budget", design.budget)}</span>
             <span>{optionLabel("wage", design.wage)}</span>
           </div>
-          {design.reason && <p className="text-[11.5px] italic leading-relaxed text-ink-dim">"{design.reason}"</p>}
+          {design.reason && <p className="text-[13px] italic leading-relaxed text-ink-dim">"{design.reason}"</p>}
         </>
       ) : (
         <span className="text-ink-faint">-</span>
@@ -436,7 +436,7 @@ export function WrapUpScreen({
             <span className="text-ink-faint">→</span>
             <Chip tone="good">{role?.headline ?? "미래의 나"}</Chip>
             <span className="text-ink-faint">→</span>
-            <Chip tone="crit">{o2 ? ORIENTATION_LABEL[o2] : "2차 설계"}</Chip>
+            <Chip tone="brand">{o2 ? ORIENTATION_LABEL[o2] : "2차 설계"}</Chip>
           </div>
           {role && <p className="mt-3 text-[13px] leading-relaxed text-ink-dim">{role.situation}</p>}
         </Card>
