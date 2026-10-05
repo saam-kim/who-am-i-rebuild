@@ -3,6 +3,8 @@ import type { PolicyChoice, PolicyCategoryId } from "../types";
 import { Card, PrimaryButton } from "./ui";
 import { useTeamActions } from "./teamActionsContext";
 
+const CHANGE_LABEL: Record<PolicyCategoryId, string> = { tax: "세금", budget: "예산", wage: "최저임금" };
+
 export function PolicyPicker({
   value,
   onChange,
@@ -35,17 +37,21 @@ export function PolicyPicker({
 
   return (
     <div className="flex flex-col gap-3">
-      {changedCategories.map((categoryId) => {
-        const category = POLICY_CATEGORIES.find((c) => c.id === categoryId)!;
-        return (
-          <div
-            key={categoryId}
-            className="font-mono-label rounded-lg border border-dashed border-warn bg-warn-bg px-3 py-2 text-[11px] text-warn"
-          >
-            {category.title}: {optionLabel(categoryId, previousChoice?.[categoryId])} → {optionLabel(categoryId, value[categoryId])}로 변경됨
-          </div>
-        );
-      })}
+      {previousChoice && (
+        <div
+          role="status"
+          aria-label="1차 설계 대비 정책 변경"
+          tabIndex={0}
+          className={`font-mono-label flex h-10 shrink-0 items-center gap-3 overflow-x-auto whitespace-nowrap rounded-lg border border-dashed px-3 text-[11px] focus-visible:outline-2 focus-visible:outline-brand ${changedCategories.length ? "border-warn bg-warn-bg text-warn" : "border-line bg-surface-2 text-ink-dim"}`}
+        >
+          {changedCategories.length ? changedCategories.map((categoryId, index) => (
+            <span key={categoryId} className="shrink-0">
+              {index > 0 && <span aria-hidden="true" className="mr-3 opacity-50">|</span>}
+              {CHANGE_LABEL[categoryId]}: {optionLabel(categoryId, previousChoice[categoryId])} → {optionLabel(categoryId, value[categoryId])}
+            </span>
+          )) : <span>1차 설계와 비교 · 정책을 바꾸면 변경 내용이 여기에 표시됩니다.</span>}
+        </div>
+      )}
 
       {POLICY_CATEGORIES.map((category) => (
         <Card key={category.id} label={category.title}>
