@@ -72,7 +72,7 @@ describe("교사 독립 리허설", () => {
     click("5 발표");
     expect(screen.getByText('"리허설에서 바꾼 근거"')).toBeTruthy();
     expect(screen.getByText('"2차 근거"')).toBeTruthy();
-    expect(screen.getByText("5개 확인함")).toBeTruthy();
+    expect(screen.getByText("뉴스 5개 확인")).toBeTruthy();
     click("2 1차 설계");
     expect(screen.getByText(/제출 완료!/)).toBeTruthy();
     expect((screen.getByPlaceholderText("왜 이 조합을 골랐나요?") as HTMLTextAreaElement).value).toBe("리허설에서 바꾼 근거");
