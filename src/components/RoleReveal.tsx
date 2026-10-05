@@ -26,25 +26,31 @@ export function RoleReveal({
 }: {
   roleId?: string;
   design1?: PolicyChoice;
-  onSpin?: () => void;
+  onSpin?: () => void | Promise<void>;
 }) {
   const [justSpun, setJustSpun] = useState(false);
   const [spinning, setSpinning] = useState(false);
-  const sawRoleId = useRef<string | undefined>(undefined);
+  const [spinError, setSpinError] = useState(false);
 
   useEffect(() => {
-    if (roleId && sawRoleId.current !== roleId) {
+    if (roleId) {
       setJustSpun(true);
       setSpinning(false);
       const timeout = window.setTimeout(() => setJustSpun(false), 1800);
-      sawRoleId.current = roleId;
       return () => window.clearTimeout(timeout);
     }
   }, [roleId]);
 
-  function handleSpin() {
+  async function handleSpin() {
+    if (spinning) return;
     setSpinning(true);
-    onSpin?.();
+    setSpinError(false);
+    try {
+      await onSpin?.();
+    } catch {
+      setSpinning(false);
+      setSpinError(true);
+    }
   }
 
   const role = roleById(roleId);
@@ -56,6 +62,7 @@ export function RoleReveal({
   return (
     <div className="grid gap-8 sm:grid-cols-2 sm:items-center">
       <div className="flex flex-col items-center justify-center gap-4">
+        {spinError && <p role="alert" className="text-[12px] text-crit">역할을 저장하지 못했습니다. 연결 상태를 확인하고 다시 돌려 주세요.</p>}
         <svg
           viewBox="0 0 200 200"
           className={`h-56 w-56 rounded-full border-4 border-white shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_10px_40px_rgba(37,99,235,0.2)] ${justSpun || spinning ? "animate-[wai-spin_1.8s_cubic-bezier(0.2,0.8,0.2,1)]" : "pulse-glow"}`}

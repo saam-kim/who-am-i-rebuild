@@ -24,7 +24,7 @@ function presenceRef(code: string, teamId: string) {
 // undefined = 아직 로딩 중, null = 확인 결과 존재하지 않음. 로딩 중을 "없음"과
 // 구분해야 새로고침 직후 "세션을 찾을 수 없어요" 화면이 잠깐 잘못 뜨지 않는다.
 
-const cache = new Map<string, SessionState | null | undefined>();
+const cache = new Map<string, SessionState | Error | null | undefined>();
 const listeners = new Map<string, Set<() => void>>();
 const dbUnsubs = new Map<string, () => void>();
 
@@ -42,6 +42,9 @@ function subscribe(code: string, callback: () => void) {
   if (!dbUnsubs.has(code)) {
     const unsub = onValue(sessionRef(code), (snap) => {
       cache.set(code, snap.exists() ? normalizeSession(snap.val() as SessionState) : null);
+      for (const cb of listeners.get(code) ?? []) cb();
+    }, (error) => {
+      cache.set(code, error);
       for (const cb of listeners.get(code) ?? []) cb();
     });
     dbUnsubs.set(code, unsub);
@@ -63,11 +66,12 @@ function getSnapshot(code: string) {
 }
 
 export function useSession(code: string | null) {
+  const validCode = code && /^\d{4}$/.test(code) ? code : null;
   const subscribeFn = useCallback(
-    (cb: () => void) => (code ? subscribe(code, cb) : () => {}),
-    [code],
+    (cb: () => void) => (validCode ? subscribe(validCode, cb) : () => {}),
+    [validCode],
   );
-  const getSnap = useCallback(() => (code ? getSnapshot(code) : null), [code]);
+  const getSnap = useCallback(() => (validCode ? getSnapshot(validCode) : null), [validCode]);
   return useSyncExternalStore(subscribeFn, getSnap, getSnap);
 }
 
@@ -76,25 +80,30 @@ function randomPin(): string {
 }
 
 export async function createSession(studentCount: number): Promise<string> {
-  let code = randomPin();
-  while (await sessionExists(code)) code = randomPin();
+  if (!Number.isFinite(studentCount) || studentCount <= 0) throw new Error("참여 학생 수를 확인해 주세요.");
   const teamCount = Math.min(20, Math.max(5, Math.round(studentCount / 2)));
-  const now = Date.now();
-  const state: SessionState = {
-    code,
-    stage: 1,
-    stageStartedAt: now,
-    stageHistory: [],
-    teams: {},
-    expectedTeamCount: teamCount,
-    createdAt: now,
-    updatedAt: now,
-  };
-  await set(sessionRef(code), state);
-  return code;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const code = randomPin();
+    const now = Date.now();
+    const state: SessionState = {
+      code,
+      stage: 1,
+      stageStartedAt: now,
+      stageHistory: [],
+      teams: {},
+      expectedTeamCount: teamCount,
+      createdAt: now,
+      updatedAt: now,
+    };
+    // 동시에 같은 PIN을 골라도 이미 만들어진 수업을 덮어쓰지 않는다.
+    const result = await runTransaction(sessionRef(code), (current) => current === null ? state : undefined, { applyLocally: false });
+    if (result.committed) return code;
+  }
+  throw new Error("사용 가능한 참여 코드를 찾지 못했습니다. 다시 시도해 주세요.");
 }
 
 export async function sessionExists(code: string): Promise<boolean> {
+  if (!/^\d{4}$/.test(code)) return false;
   const snap = await get(sessionRef(code));
   return snap.exists();
 }
@@ -112,7 +121,7 @@ export async function updateSession(code: string, mutator: (draft: SessionState)
   if (code === "__preview__") return;
   const result = await runTransaction(sessionRef(code), (current: SessionState | null) => {
     if (current === null) return null;
-    const draft = normalizeSession(current);
+    const draft = normalizeSession(structuredClone(current));
     mutator(draft);
     draft.updatedAt = Date.now();
     return draft;
@@ -124,6 +133,7 @@ export async function updateSession(code: string, mutator: (draft: SessionState)
 
 export async function setStage(code: string, stage: Stage) {
   await updateSession(code, (s) => {
+    if (s.stage === stage) return;
     s.stageHistory = [...(s.stageHistory ?? []), s.stage];
     s.stage = stage;
     s.stageStartedAt = Date.now();
@@ -216,41 +226,48 @@ export async function joinTeam(code: string): Promise<{ teamId: string } | { err
 // 동기적으로 읽을 수 있도록, 구독은 한 번만 붙이고 로컬 캐시로 서빙한다.
 
 const presenceCache = new Map<string, Record<string, number>>();
-const presenceUnsubs = new Map<string, () => void>();
+const pendingPresence = new Set<string>();
 
-function ensurePresenceSubscription(code: string) {
-  if (presenceUnsubs.has(code)) return;
+export function subscribePresence(code: string) {
   const unsub = onValue(ref(db, `presence/${code}`), (snap) => {
     presenceCache.set(code, (snap.val() as Record<string, number>) ?? {});
-  });
-  presenceUnsubs.set(code, unsub);
+  }, () => presenceCache.delete(code));
+  return () => {
+    unsub();
+    presenceCache.delete(code);
+  };
 }
 
 export function touchTeam(code: string, teamId: string) {
+  const key = `${code}/${teamId}`;
+  if (pendingPresence.has(key)) return;
+  pendingPresence.add(key);
   set(presenceRef(code, teamId), Date.now()).catch(() => {
     // 오프라인 등으로 쓰기 실패 — 접속 상태 표시만 영향받고 앱은 계속 동작
-  });
+  }).finally(() => pendingPresence.delete(key));
 }
 
 export function isTeamConnected(code: string, teamId: string): boolean {
-  ensurePresenceSubscription(code);
   const ts = presenceCache.get(code)?.[teamId];
   if (!ts) return false;
   return Date.now() - ts < 12000;
 }
 
 export async function updateTeam(code: string, teamId: string, mutator: (team: Team) => void) {
-  await updateSession(code, (s) => {
-    const team = s.teams[teamId];
-    if (!team) throw new Error("저장할 팀을 찾을 수 없습니다.");
-    mutator(team);
-  });
+  if (code === "__preview__") return;
+  // 팀별 경로에 저장해 다른 팀의 입력과 불필요하게 경쟁하지 않는다.
+  const result = await runTransaction(ref(db, `sessions/${code}/teams/${teamId}`), (current: Team | null) => {
+    if (current === null) return null;
+    const draft = structuredClone(current);
+    mutator(draft);
+    return draft;
+  }, { applyLocally: false });
+  if (!result.committed || !result.snapshot.exists()) throw new Error("팀 정보를 저장하지 못했습니다.");
 }
 
 export async function revealRoleForTeam(code: string, teamId: string, roleId: string) {
-  await updateSession(code, (s) => {
-    const team = s.teams[teamId];
-    if (team && !team.roleId) {
+  await updateTeam(code, teamId, (team) => {
+    if (!team.roleId) {
       team.roleId = roleId;
       team.roleRevealedAt = Date.now();
     }

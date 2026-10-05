@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   adjustStageTime,
   isTeamConnected,
+  subscribePresence,
   revealAllRoles,
   revealRoleForTeam,
   setStage,
@@ -21,6 +22,7 @@ import { downloadSessionCsv } from "../../data/csv";
 import { STAGE_META, type SessionState, type Stage, type Team } from "../../types";
 import { PreviewModal } from "./PreviewModal";
 import { EntryQrModal } from "./EntryQrModal";
+import { useAsyncAction } from "../../components/useAsyncAction";
 
 export function TeacherDashboard() {
   const { code = "" } = useParams();
@@ -32,6 +34,9 @@ export function TeacherDashboard() {
   const closeQr = useCallback(() => setDismissedQrCode(code), [code]);
   const qrOpen = dismissedQrCode !== code;
 
+  if (session instanceof Error) {
+    return <div className="p-6 text-center" role="alert">수업 정보를 불러오지 못했습니다. 연결 상태를 확인한 뒤 <button className="text-brand underline" onClick={() => window.location.reload()}>다시 연결하기</button></div>;
+  }
   if (session === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center">
@@ -76,7 +81,7 @@ export function TeacherDashboard() {
 
       {qrOpen && <EntryQrModal key={code} code={code} onClose={closeQr} />}
       {previewOpen && <PreviewModal session={session} onClose={() => setPreviewOpen(false)} />}
-      {selectedTeam && <TeamDetailModal team={selectedTeam} onClose={() => setSelectedTeam(null)} />}
+      {selectedTeam && session.teams[selectedTeam.id] && <TeamDetailModal team={session.teams[selectedTeam.id]} onClose={() => setSelectedTeam(null)} />}
     </div>
   );
 }
@@ -96,6 +101,7 @@ function ShellTop({
 }) {
   const remaining = useCountdown(session.stageStartedAt, STAGE_META[session.stage].durationSec);
   const timeLow = remaining <= 60;
+  const { run, pending, error } = useAsyncAction();
   return (
     <div className="flex flex-col gap-3 border-b border-line bg-surface-1 px-4 py-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -119,7 +125,8 @@ function ShellTop({
             <button
               key={stage}
               aria-current={session.stage === stage ? "step" : undefined}
-              onClick={() => setStage(code, stage)}
+              disabled={pending || session.stage === stage}
+              onClick={() => run(() => setStage(code, stage))}
               className={`font-mono-label min-h-8 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10.5px] transition-all duration-200 ${
                 session.stage === stage
                   ? "border-brand bg-linear-to-br from-brand to-brand-ink text-white font-bold shadow-[0_4px_10px_rgba(37,99,235,0.25)]"
@@ -135,7 +142,8 @@ function ShellTop({
             className={`font-mono-label flex h-8 items-center gap-1 rounded-lg border px-1.5 ${timeLow ? "border-crit/30 bg-crit-bg" : "border-line bg-surface-2"}`}
           >
             <button
-              onClick={() => adjustStageTime(code, -60)}
+              disabled={pending}
+              onClick={() => run(() => adjustStageTime(code, -60))}
               aria-label="1분 줄이기"
               className="rounded px-1.5 text-[13px] text-ink-dim hover:text-ink"
             >
@@ -143,21 +151,23 @@ function ShellTop({
             </button>
             <span className={`font-display px-1 text-[13px] font-semibold ${timeLow ? "text-crit" : "text-ink"}`}>{formatClock(remaining)}</span>
             <button
-              onClick={() => adjustStageTime(code, 60)}
+              disabled={pending}
+              onClick={() => run(() => adjustStageTime(code, 60))}
               aria-label="1분 늘리기"
               className="rounded px-1.5 text-[13px] text-ink-dim hover:text-ink"
             >
               +
             </button>
           </div>
-          <GhostButton tone="warn" onClick={() => undoStage(code)} disabled={session.stageHistory.length === 0}>
+          <GhostButton tone="warn" onClick={() => run(() => undoStage(code))} disabled={pending || session.stageHistory.length === 0}>
             ◂ 단계 되돌리기
           </GhostButton>
-          <GhostButton tone="brand" onClick={() => setStage(code, (session.stage + 1) as Stage)} disabled={session.stage === 5}>
+          <GhostButton tone="brand" onClick={() => run(() => setStage(code, (session.stage + 1) as Stage))} disabled={pending || session.stage === 5}>
             다음 단계로 ▸
           </GhostButton>
         </div>
       </div>
+      {error && <p role="alert" className="text-[12px] text-crit">변경하지 못했습니다. 연결 상태를 확인하고 다시 눌러 주세요.</p>}
     </div>
   );
 }
@@ -178,6 +188,7 @@ function Sidebar({
   // isTeamConnected는 세션 문서 밖(별도 presence 키)을 읽으므로, 세션이 안 바뀌어도
   // 접속 상태를 최신으로 보여주려면 이 컴포넌트가 스스로 주기적으로 다시 그려야 한다.
   const [, forceTick] = useState(0);
+  useEffect(() => subscribePresence(code), [code]);
   useEffect(() => {
     const id = window.setInterval(() => forceTick((n) => n + 1), 2000);
     return () => window.clearInterval(id);
@@ -392,17 +403,19 @@ function DesignTablePanel({ teams, round }: { teams: Team[]; round: 1 | 2 }) {
 }
 
 function Stage3Panel({ code, teams }: { code: string; teams: Team[] }) {
+  const { run, pending, error } = useAsyncAction();
   const remaining = teams.filter((t) => !t.roleId).length;
   return (
     <div className="flex flex-col gap-3">
       <PanelCard label="역할 공개 현황">
         <p className="mb-3 text-[12px] text-ink-dim">학생들이 각자 화면에서 직접 룰렛을 돌려 역할을 공개합니다.</p>
         {remaining > 0 && (
-          <GhostButton tone="warn" onClick={() => revealAllRoles(code, () => pickWeightedRole().id)}>
+          <GhostButton tone="warn" disabled={pending} onClick={() => run(() => revealAllRoles(code, () => pickWeightedRole().id))}>
             아직 안 돌린 {remaining}팀 한번에 공개
           </GhostButton>
         )}
       </PanelCard>
+      {error && <p role="alert" className="text-[12px] text-crit">역할을 저장하지 못했습니다. 연결 상태를 확인하고 다시 눌러 주세요.</p>}
       <PanelCard label="팀별 상태">
         <div className="flex flex-col gap-1.5">
           {teams.map((team) => {
@@ -415,7 +428,7 @@ function Stage3Panel({ code, teams }: { code: string; teams: Team[] }) {
                 ) : (
                   <div className="flex items-center gap-2">
                     <Chip tone="warn">대기중</Chip>
-                    <GhostButton tone="brand" onClick={() => revealRoleForTeam(code, team.id, pickWeightedRole().id)}>
+                    <GhostButton tone="brand" disabled={pending} onClick={() => run(() => revealRoleForTeam(code, team.id, pickWeightedRole().id))}>
                       지금 공개
                     </GhostButton>
                   </div>

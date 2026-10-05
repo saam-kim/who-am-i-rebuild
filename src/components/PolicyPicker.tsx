@@ -11,17 +11,22 @@ export function PolicyPicker({
   onSubmit,
   submitLabel,
   previousChoice,
+  saved = true,
+  saveError = false,
 }: {
   value: PolicyChoice;
   onChange: (next: PolicyChoice) => void;
   onSubmit: () => void;
   submitLabel: string;
   previousChoice?: PolicyChoice;
+  saved?: boolean;
+  saveError?: boolean;
 }) {
   const { previewViewport } = useTeamActions();
   const desktopPreview = previewViewport === "desktop";
   const complete = Boolean(value.tax && value.budget && value.wage && value.reason?.trim());
-  const isSubmitted = Boolean(value.submittedAt);
+  const isSubmitted = Boolean(value.submittedAt) && saved && !saveError;
+  const submitting = Boolean(value.submittedAt) && !saved && !saveError;
 
   // value[c.id]가 아직 없으면(2차 설계를 막 시작해 새로 고르지 않은 상태) "미선택으로
   // 변경됨"처럼 보이는 오해를 막기 위해, 실제로 새로 고른 항목만 변경으로 표시한다.
@@ -86,14 +91,16 @@ export function PolicyPicker({
         />
       </Card>
 
+      {saveError && <p role="alert" className="text-[12px] text-crit">저장하지 못했습니다. 연결 상태를 확인하고 다시 제출해 주세요.</p>}
+      {!saved && !saveError && <p role="status" className="text-[12px] text-ink-dim">{submitting ? "제출 내용을 저장하는 중…" : "저장 중…"}</p>}
       {isSubmitted ? (
         <div key="submit" className="flex items-center justify-between gap-2 rounded-xl border border-good bg-good-bg px-4 py-3">
           <span className="text-[12.5px] font-semibold text-good">제출 완료! 팀원과 함께 다음 단계를 기다려 주세요.</span>
         </div>
       ) : (
         <div key="submit" className="flex items-center justify-end">
-          <PrimaryButton onClick={onSubmit} disabled={!complete}>
-            {submitLabel}
+          <PrimaryButton onClick={onSubmit} disabled={!complete || submitting}>
+            {submitting ? "제출 중…" : submitLabel}
           </PrimaryButton>
         </div>
       )}

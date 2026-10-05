@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getMyTeamId, touchTeam, useSession } from "../../store/sessionStore";
 import { useTeamActions } from "../../components/teamActionsContext";
@@ -23,7 +23,11 @@ export function StudentPlay() {
   const [wrapUp, setWrapUp] = useState(false);
 
   useEffect(() => {
-    if (!session) return;
+    if (session && !(session instanceof Error) && session.stage !== 5) setWrapUp(false);
+  }, [session]);
+
+  useEffect(() => {
+    if (!session || session instanceof Error) return;
     if (!teamId || !session.teams[teamId]) navigate("/join");
   }, [session, teamId, navigate]);
 
@@ -34,6 +38,9 @@ export function StudentPlay() {
     return () => window.clearInterval(id);
   }, [code, teamId]);
 
+  if (session instanceof Error) {
+    return <div className="p-6 text-center" role="alert">수업 정보를 불러오지 못했습니다. 연결 상태를 확인한 뒤 <button className="text-brand underline" onClick={() => window.location.reload()}>다시 연결하기</button></div>;
+  }
   if (session === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center">
@@ -184,28 +191,18 @@ export function DesignScreen({
   team: Team;
 }) {
   const { updateTeam } = useTeamActions();
-  // 세션 스토어는 최대 1초 지연으로 반영되기 때문에, 편집 중인 값은
-  // 로컬 state를 기준으로 삼고 스토어에는 저장만 fire-and-forget으로 보낸다.
-  // (스토어 프롭을 그대로 controlled value로 쓰면 빠른 연속 선택 시 값이 씹힌다.)
-  const [value, setValue] = useState<PolicyChoice>(team.design1 ?? {});
-
-  function persist(next: PolicyChoice) {
-    updateTeam(code, teamId, (t) => (t.design1 = next));
-  }
+  const initialValue = useMemo(() => team.design1 ?? {}, [team.design1]);
+  const { value, onChange, saved, error } = useDebouncedField<PolicyChoice>(initialValue,
+    (next) => updateTeam(code, teamId, (t) => { t.design1 = next; }), 500, true);
 
   return (
     <Screen stage={2} stageStartedAt={session.stageStartedAt} cta="상의해서 함께 제출" teamName={team.name}>
       <PolicyPicker
         value={value}
-        onChange={(next) => {
-          setValue(next);
-          persist(next);
-        }}
-        onSubmit={() => {
-          const submitted = { ...value, submittedAt: Date.now() };
-          setValue(submitted);
-          persist(submitted);
-        }}
+        saved={saved}
+        saveError={error}
+        onChange={onChange}
+        onSubmit={() => onChange({ ...value, submittedAt: Date.now() }, true)}
         submitLabel="팀 제출"
       />
     </Screen>
@@ -257,13 +254,10 @@ export function SecondRoundScreen({
   // 2차 설계도 백지가 아니라 1차 선택을 출발점으로 준다 — "재검토"는 처음부터
   // 다시 고르는 게 아니라 바꿀 것만 바꾸는 작업이라서다. 이유(reason)는 "왜
   // 바뀌었는지"를 새로 묻는 것이므로 비워서 시작한다.
-  const initialValue: PolicyChoice =
-    team.design2 ?? (design1 ? { tax: design1.tax, budget: design1.budget, wage: design1.wage } : {});
-  const [value, setValue] = useState<PolicyChoice>(initialValue);
-
-  function persist(next: PolicyChoice) {
-    updateTeam(code, teamId, (t) => (t.design2 = next));
-  }
+  const initialValue = useMemo<PolicyChoice>(() =>
+    team.design2 ?? (design1 ? { tax: design1.tax, budget: design1.budget, wage: design1.wage } : {}), [team.design2, design1]);
+  const { value, onChange, saved, error } = useDebouncedField<PolicyChoice>(initialValue,
+    (next) => updateTeam(code, teamId, (t) => { t.design2 = next; }), 500, true);
 
   return (
     <Screen stage={4} stageStartedAt={session.stageStartedAt} cta="뉴스를 보고 정책 다시 설계하기" teamName={team.name}>
@@ -274,16 +268,11 @@ export function SecondRoundScreen({
       </Card>
       <PolicyPicker
         value={value}
+        saved={saved}
+        saveError={error}
         previousChoice={design1}
-        onChange={(next) => {
-          setValue(next);
-          persist(next);
-        }}
-        onSubmit={() => {
-          const submitted = { ...value, submittedAt: Date.now() };
-          setValue(submitted);
-          persist(submitted);
-        }}
+        onChange={onChange}
+        onSubmit={() => onChange({ ...value, submittedAt: Date.now() }, true)}
         submitLabel="최종 제출"
       />
     </Screen>
@@ -310,9 +299,10 @@ export function PresentationScreen({
 
   const role = roleById(team.roleId);
   const seenEvents = useTeamEventCards(code, teamId, team, Boolean(team.eventCardIds?.length));
-  const orientation1 = team.design1 ? computeOrientation(team.design1) : undefined;
-  const stability = role && orientation1 ? computeStability(orientation1, role.tier) : undefined;
-  const gap = orientation1 ? computeGap(orientation1) : undefined;
+  const finalDesign = team.design2 ?? team.design1;
+  const orientation = finalDesign ? computeOrientation(finalDesign) : undefined;
+  const stability = role && orientation ? computeStability(orientation, role.tier) : undefined;
+  const gap = orientation ? computeGap(orientation) : undefined;
 
   return (
     <Screen stage={5} stageStartedAt={session.stageStartedAt} cta="여정을 정리해서 발표" teamName={team.name}>
