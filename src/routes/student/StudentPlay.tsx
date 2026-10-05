@@ -317,15 +317,26 @@ export function PresentationScreen({
   return (
     <Screen stage={5} stageStartedAt={session.stageStartedAt} cta="여정을 정리해서 발표" teamName={team.name}>
       <Card label="우리 팀의 여정">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-4">
           <PolicyStoryCard n="1차 설계" design={team.design1} tone="brand" />
           <StoryCard n="미래의 나" title={role?.headline ?? "-"} detail={role?.situation} tone="good" />
           <StoryCard
             n="사건 카드"
-            title={seenEvents.length ? `${seenEvents.length}개 확인함` : "-"}
-            detail={seenEvents.map((e) => `• ${e.headline}`).join("\n")}
+            title={seenEvents.length ? `뉴스 ${seenEvents.length}개 확인` : "확인한 뉴스가 없습니다"}
             tone="warn"
-          />
+          >
+            {seenEvents.length > 0 && (
+              <details className="group">
+                <summary className="w-fit cursor-pointer rounded text-[13px] text-brand-ink underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+                  <span className="group-open:hidden">제목 펼쳐보기</span>
+                  <span className="hidden group-open:inline">제목 접기</span>
+                </summary>
+                <ul className="mt-3 list-disc space-y-2 pl-4 text-[13px] leading-relaxed text-ink-dim">
+                  {seenEvents.map((event) => <li key={event.id} className="break-keep">{event.headline}</li>)}
+                </ul>
+              </details>
+            )}
+          </StoryCard>
           <PolicyStoryCard n="2차 설계" design={team.design2} tone="brand" />
         </div>
         {stability && gap && (
@@ -372,12 +383,13 @@ const STORY_LABEL: Record<StoryTone, string> = {
   crit: "text-crit",
 };
 
-function StoryCard({ n, title, detail, tone }: { n: string; title: string; detail?: string; tone: StoryTone }) {
+function StoryCard({ n, title, detail, tone, children }: { n: string; title: string; detail?: string; tone: StoryTone; children?: ReactNode }) {
   return (
     <div className={`flex flex-col gap-2 rounded-xl border border-line ${STORY_BORDER[tone]} border-t-[3px] bg-surface-1 p-3.5`}>
       <span className={`font-mono-label text-[10px] ${STORY_LABEL[tone]}`}>{n}</span>
       <span className="text-[13px] font-semibold leading-snug text-ink">{title}</span>
       {detail && <p className="whitespace-pre-line text-[13px] leading-relaxed text-ink-dim">{detail}</p>}
+      {children}
     </div>
   );
 }
